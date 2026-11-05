@@ -31,7 +31,7 @@ MeDKCoOp/
 │   ├── clip/                      # CLIP + pmcclip（已合并 clip1 的 MaPLe/IVLP 分支）
 │   └── MedSAM/                    # 视觉知识分支
 ├── tools/parse_test_res.py        # 日志 → 均值/方差
-└── docs/                          # 环境与运行 / 复现方案 / 结构映射
+└── docs/                          # 环境与运行 / 复现方案 / 结构映射 / 权重清理清单
 ```
 
 ## 保留的东西为什么都在
@@ -75,7 +75,7 @@ cd /home/wangyijun/MeDKCoOp
 GPU=0 bash scripts/medkcoop/base2new.sh BTMRI1 1
 ```
 
-完整环境、权重、单步命令与论文对照见 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)。
+完整环境、权重、单步命令与论文对照见 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)；`/data` 权重清理建议见 [docs/WEIGHTS.md](docs/WEIGHTS.md)。
 
 ## 当前状态
 
