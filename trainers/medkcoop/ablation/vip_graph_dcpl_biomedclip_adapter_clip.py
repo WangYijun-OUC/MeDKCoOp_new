@@ -19,8 +19,8 @@ from dassl.metrics import compute_accuracy
 from dassl.utils import load_pretrained_weights, load_checkpoint
 from dassl.optim import build_optimizer, build_lr_scheduler
 from trainers.prompt_templates import BIOMEDCOOP_TEMPLATES, CUSTOM_TEMPLATES, IMAGENET_TEMPLATES, CUSTOM_TEMPLATES
-from clip1 import clip
-from clip1.simple_tokenizer import SimpleTokenizer as _Tokenizer
+from clip import clip
+from clip.simple_tokenizer import SimpleTokenizer as _Tokenizer
 
 # from clip import clip
 # from clip.simple_tokenizer import SimpleTokenizer as _Tokenizer

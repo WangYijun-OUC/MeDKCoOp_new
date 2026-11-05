@@ -28,7 +28,7 @@ MeDKCoOp/
 ├── third_party/
 │   ├── Dassl.pytorch/             # 训练框架（需在新环境 pip install -e）
 │   ├── open_clip/                 # BiomedCLIP 加载
-│   ├── clip/  clip1/              # 两套 CLIP（PubMed/PMC 系 vs MaPLe/DPLQ 系）
+│   ├── clip/                      # CLIP + pmcclip（已合并 clip1 的 MaPLe/IVLP 分支）
 │   └── MedSAM/                    # 视觉知识分支
 ├── tools/parse_test_res.py        # 日志 → 均值/方差
 └── docs/                          # 环境与运行 / 复现方案 / 结构映射
@@ -42,7 +42,7 @@ MeDKCoOp/
 | `reference/paper_bytecode/*.pyc` | 论文 "Ours"（`GRAPH_DCPL_NO_TXT_VIS_GRAPH`）源码丢失后的唯一残留 |
 | `ablation/` 16 个文件 | 分别对应 Table 4（视觉/文本知识消融）、Table 5（KRGC/KRTL 组合）、Fig 4（三种 backbone） |
 | `trainers/baselines/` 8 个 | 论文表格中的对比方法：BiomedCoOp、CoOp、CoCoOp、KgCoOp、MaPLe、DCPL、GraphAdapter、Zeroshot(BiomedCLIP) |
-| `third_party/clip` 与 `clip1` | 前者供 PubMedCLIP/PMC-CLIP 系使用，后者供 MaPLe/DCPL-CLIP/GraphAdapter 使用，均被保留的 trainer 引用 |
+| `third_party/clip` | 单一 CLIP 包：标准 CLIP + `pmcclip.py` + MaPLe/DCPL 的 IVLP 分支；所有 trainer 共用 |
 | `datasets/*v2.py` | domain generalization 的目标域数据（整份数据直接评测） |
 
 ## 已删除的内容（可从备份恢复）

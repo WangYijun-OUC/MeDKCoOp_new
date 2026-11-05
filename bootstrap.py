@@ -5,7 +5,7 @@
 
 做三件事：
 1. 把 third_party/ 及其子包加入 sys.path，使
-   `from clip import ...`、`from clip1 import ...`、`from MedSAM...`、
+   `from clip import ...`、`from MedSAM...`、
    `open_clip.src.open_clip` 都能直接解析；
 2. 把 `open_clip` 里对 `hf-hub:microsoft/BiomedCLIP-...` 的加载替换为本地权重
    （默认 /data/wangyijun/model/BiomedCLIP，可用 BIOMEDCLIP_DIR 覆盖）；

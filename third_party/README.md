@@ -6,8 +6,8 @@
 |---|---|---|
 | `Dassl.pytorch/` | 全部 trainer | 训练框架。当前环境是 editable 安装且指向**原项目**，换环境必须 `pip install -e third_party/Dassl.pytorch` |
 | `open_clip/` | `medkcoop/*`、baseline 的 BiomedCLIP 版本 | BiomedCLIP 加载；代码以 `open_clip.src.open_clip` 绝对导入，**不要改目录名** |
-| `clip/` | `Zeroshot`、`CoOp_PubMedCLIP/PMCCLIP`、`CoCoOp_*`、`KgCoOp_*`、`BiomedCoOp_*`、`medkcoop` 的 `_pubmedclip/_pmcclip` | OpenAI CLIP + `pmcclip.py` |
-| `clip1/` | `MaPLe`、`DCPL_CLIP`、`GraphAdapter`、`medkcoop` 的 `_clip` | 带 IVLP/MaPLe 的 CLIP 改版 |
+| `clip/` | 所有 trainer | 合并后的 CLIP：标准 CLIP + `pmcclip.py`（PMC-CLIP）+ MaPLe/DCPL 的 IVLP 分支；标准路径与原实现位级一致 |
+
 | `MedSAM/` | `medkcoop` 视觉知识分支 | 权重在 `/data/wangyijun/model/medsam/sam_vit_b_01ec64.pth` |
 
 ## 为什么 clip 与 clip1 同时存在

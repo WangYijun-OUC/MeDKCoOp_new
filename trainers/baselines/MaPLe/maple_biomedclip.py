@@ -13,8 +13,8 @@ from dassl.metrics import compute_accuracy
 from dassl.utils import load_pretrained_weights, load_checkpoint
 from dassl.optim import build_optimizer, build_lr_scheduler
 
-# from clip1 import clip
-# from clip1.simple_tokenizer import SimpleTokenizer as _Tokenizer
+# from clip import clip
+# from clip.simple_tokenizer import SimpleTokenizer as _Tokenizer
 
 # _tokenizer = _Tokenizer()
 from open_clip.src.open_clip import create_model_from_pretrained, get_tokenizer

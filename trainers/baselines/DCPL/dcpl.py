@@ -15,8 +15,8 @@ from dassl.metrics import compute_accuracy
 from dassl.utils import load_pretrained_weights, load_checkpoint
 from dassl.optim import build_optimizer, build_lr_scheduler
 import numpy as np
-from clip1 import clip
-from clip1.simple_tokenizer import SimpleTokenizer as _Tokenizer
+from clip import clip
+from clip.simple_tokenizer import SimpleTokenizer as _Tokenizer
 from MedSAM.segment_anything import sam_model_registry
 
 _tokenizer = _Tokenizer()
