@@ -22,7 +22,7 @@ scripts/
 
 1. 脚本内部仍调用 `bash scripts/graph_dcpl/xd_test.sh ...`，目录已改名为 `scripts/medkcoop/`。
 2. `--config-file` 多写 `configs/trainers/GRAPH_DCPL/...`，该目录不存在；实际用
-   `configs/trainers/MeDKCoOp/{base_to_novel,few_shot}/<DATASET>.yaml`。
+   `configs/trainers/medkcoop/{base_to_novel,few_shot}/<DATASET>.yaml`。
 3. 输出目录写死 `/home/wangyijun/ckpt/...` 或 `/data/wangyijun/ckpt/...`，GPU 写死 `Device_id=5..9`。
 4. `CFG=vit_b16_0002_b50_randflip` 只是目录名，不是配置路径。
 5. few-shot 脚本传 `TRAINER.BIOMEDCOOP.*`，但 GRAPHDCPL trainer 读 `TRAINER.GRAPHDCPL.*`，覆盖无效。

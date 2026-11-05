@@ -1,107 +1,87 @@
 import argparse
-import torch
+import os
 import sys
+
+import bootstrap  # noqa: F401,E402  路径/离线权重适配，必须先于 trainer 导入
+import torch
 
 from dassl.utils import setup_logger, set_random_seed, collect_env_info
 from dassl.config import get_cfg_default
 from dassl.engine import build_trainer
 
-
-import datasets.busi
-import datasets.lungcolon
+# ---- 数据集：与 configs/datasets 一一对应（8 个 v1 + 7 个 v2） ----
+import datasets.BTMRI1
 import datasets.chmnist
 import datasets.covid
-import datasets.btmri
-import datasets.BTMRI1
 import datasets.ctkidney
 import datasets.kvasir
-import datasets.retina
-import datasets.kneexray
-import datasets.dermamnist 
+import datasets.lungcolon
 import datasets.octmnist
-import datasets.CCBTM
+import datasets.retina
 
-import datasets.lungcolonv2
 import datasets.chmnistv2
 import datasets.covidv2
-import datasets.btmriv2
-import datasets.BTMRI1v2
 import datasets.ctkidneyv2
 import datasets.kvasirv2
-import datasets.retinav2
-import datasets.kneexrayv2
-import datasets.dermamnistv2 
+import datasets.lungcolonv2
 import datasets.octmnistv2
-import datasets.CCBTMv2
+import datasets.retinav2
 
-import trainers.Zeroshot.zeroshot
-import trainers.CoOp.coop_clip
-import trainers.CoOp.coop_biomedclip
-import trainers.CoOp.coop_pubmedclip
-import trainers.CoOp.coop_pmcclip
-import trainers.CoCoOp.cocoop_clip
-import trainers.CoCoOp.cocoop_biomedclip
-import trainers.CoCoOp.cocoop_pubmedclip
-import trainers.CoCoOp.cocoop_pmcclip
-import trainers.KgCoOp.kgcoop_clip
-import trainers.KgCoOp.kgcoop_biomedclip
-import trainers.KgCoOp.kgcoop_pubmedclip
-import trainers.KgCoOp.kgcoop_pmcclip
-import trainers.ProGrad.prograd_clip
-import trainers.ProGrad.prograd_biomedclip
-import trainers.ProGrad.prograd_pubmedclip
-import trainers.ProGrad.prograd_pmcclip
-import trainers.BiomedCoOp.biomedcoop_clip
-import trainers.BiomedCoOp.biomedcoop_biomedclip
-import trainers.BiomedCoOp.biomedcoop_pubmedclip
-import trainers.BiomedCoOp.biomedcoop_pmcclip
-# import trainers.GRAPH_DCPL.vip_graph_dcpl_biomedclip
-# import trainers.MeDKCoOp.medkcoop
-import trainers.GRAPH_DCPL.medkcoop_blip
-import trainers.GRAPH_DCPL.medkcoop
-import trainers.rebuttal.medkcoop_time
-# import trainers.GRAPH_DCPL.vip_graph_dcpl_biomedclip_adapter
-# import trainers.GRAPH_DCPL.vip_graph_dcpl_biomedclip_adapter_hyper
-# import trainers.GRAPH_DCPL.vip_graph_dcpl_biomedclip_adapter_hyper1
-# import trainers.GRAPH_DCPL.vip_graph_dcpl_biomedclip_adapter_no_vis_bias
-# import trainers.GRAPH_DCPL.vip_graph_dcpl_biomedclip_adapter_no_txt_bias
-# import trainers.GRAPH_DCPL.vip_graph_dcpl_biomedclip_adapter_no_medsam
-# import trainers.GRAPH_DCPL.vip_graph_dcpl_biomedclip_adapter_general
-# import trainers.GRAPH_DCPL.vip_graph_dcpl_biomedclip_adapter_outofdomain
-# import trainers.GRAPH_DCPL.vip_graph_dcpl_biomedclip_adapter_incorrect
-# import trainers.GRAPH_DCPL.vip_graph_dcpl_biomedclip_adapter_clip
-# import trainers.GRAPH_DCPL.vip_graph_dcpl_biomedclip_adapter_pubmedclip
-# import trainers.GRAPH_DCPL.vip_graph_dcpl_biomedclip_adapter_pmcclip
-# import trainers.GRAPH_DCPL.vip_graph_dcpl_biomedclip_adapter_no_fuse
-# import trainers.GRAPH_DCPL.vip_graph_dcpl_biomedclip_adapter_no_vis_graph
-# import trainers.GRAPH_DCPL.vip_graph_dcpl_biomedclip_adapter_no_vis_fuse_graph
-# import trainers.GRAPH_DCPL.vip_graph_dcpl_biomedclip_adapter_no_text_graph
-# import trainers.GRAPH_DCPL.vip_graph_dcpl_biomedclip_adapter_no_text_fuse_graph
-import trainers.GRAPH_DCPL.vip_graph_dcpl_biomedclip_adapter_no_text_vis_graph1
-# import trainers.GRAPH_DCPL.vip_graph_dcpl_biomedclip_adapter_no_text_vis_fuse
-# import trainers.GRAPH_DCPL.hyper.a06b03
-# import trainers.GRAPH_DCPL.hyper.a05b03
-# import trainers.GRAPH_DCPL.hyper.a08b03
-# import trainers.GRAPH_DCPL.hyper.a04b03
-# import trainers.GRAPH_DCPL.hyper.b01
-# import trainers.GRAPH_DCPL.hyper.b02
-# import trainers.GRAPH_DCPL.hyper.b04
-# import trainers.GRAPH_DCPL.hyper.b05
-# import trainers.GRAPH_DCPL.hyper.b06
-# import trainers.GRAPH_DCPL.hyper.b07
-# import trainers.GRAPH_DCPL.hyper.b08
-# import trainers.GRAPH_DCPL.cre_graph_dcpl_biomedclip
-# import trainers.GRAPH_DCPL.cre_graph_dcpl_biomedclip_4_know
-# import trainers.GRAPH_DCPL.vip_dcpl
-# import trainers.GRAPH_DCPL.lrt_vip_graph_dcpl
-# import trainers.GRAPH_DCPL.cre_graph_dcpl_biomedclip_adapter
-import trainers.DCPL.dcpl
-import trainers.DCPL.dcpl_biomedclip
-import trainers.DCPL.dcpl_pmcclip
-import trainers.DCPL.dcpl_pubmedclip
-import trainers.GraphAdapter.baseclip_graph
-import trainers.GraphAdapter.baseclip_graph_pmcclip
-import trainers.MaPLe.maple
+# ---- 对比方法（trainers/baselines） ----
+import trainers.baselines.Zeroshot.zeroshot
+
+import trainers.baselines.CoOp.coop_clip
+import trainers.baselines.CoOp.coop_biomedclip
+import trainers.baselines.CoOp.coop_pubmedclip
+import trainers.baselines.CoOp.coop_pmcclip
+
+import trainers.baselines.CoCoOp.cocoop_clip
+import trainers.baselines.CoCoOp.cocoop_biomedclip
+import trainers.baselines.CoCoOp.cocoop_pubmedclip
+import trainers.baselines.CoCoOp.cocoop_pmcclip
+
+import trainers.baselines.KgCoOp.kgcoop_clip
+import trainers.baselines.KgCoOp.kgcoop_biomedclip
+import trainers.baselines.KgCoOp.kgcoop_pubmedclip
+import trainers.baselines.KgCoOp.kgcoop_pmcclip
+
+import trainers.baselines.BiomedCoOp.biomedcoop_clip
+import trainers.baselines.BiomedCoOp.biomedcoop_biomedclip
+import trainers.baselines.BiomedCoOp.biomedcoop_pubmedclip
+import trainers.baselines.BiomedCoOp.biomedcoop_pmcclip
+
+import trainers.baselines.DCPL.dcpl
+import trainers.baselines.DCPL.dcpl_biomedclip
+import trainers.baselines.DCPL.dcpl_pmcclip
+import trainers.baselines.DCPL.dcpl_pubmedclip
+
+import trainers.baselines.GraphAdapter.baseclip_graph
+import trainers.baselines.GraphAdapter.baseclip_graph_biomedclip
+import trainers.baselines.GraphAdapter.baseclip_graph_pmcclip
+
+import trainers.baselines.MaPLe.maple
+
+# ---- 本文方法（reference 为可运行版本；ablation 对应论文 Table 4/5 与 Fig 4） ----
+import trainers.medkcoop.reference.medkcoop
+
+import trainers.medkcoop.ablation.vip_graph_dcpl_biomedclip_adapter_no_text_vis_graph1
+import trainers.medkcoop.ablation.vip_graph_dcpl_biomedclip_adapter_no_vis_graph
+import trainers.medkcoop.ablation.vip_graph_dcpl_biomedclip_adapter_no_text_graph
+import trainers.medkcoop.ablation.vip_graph_dcpl_biomedclip_adapter_no_fuse
+import trainers.medkcoop.ablation.vip_graph_dcpl_biomedclip_adapter_no_text_fuse_graph
+import trainers.medkcoop.ablation.vip_graph_dcpl_biomedclip_adapter_no_vis_fuse_graph
+import trainers.medkcoop.ablation.vip_graph_dcpl_biomedclip_adapter_no_text_vis_fuse
+import trainers.medkcoop.ablation.vip_graph_dcpl_biomedclip_adapter_no_medsam
+import trainers.medkcoop.ablation.vip_graph_dcpl_biomedclip_adapter_no_vis_bias
+import trainers.medkcoop.ablation.vip_graph_dcpl_biomedclip_adapter_no_txt_bias
+import trainers.medkcoop.ablation.vip_graph_dcpl_biomedclip_adapter_general
+import trainers.medkcoop.ablation.vip_graph_dcpl_biomedclip_adapter_incorrect
+import trainers.medkcoop.ablation.vip_graph_dcpl_biomedclip_adapter_outofdomain
+import trainers.medkcoop.ablation.vip_graph_dcpl_biomedclip_adapter_clip
+import trainers.medkcoop.ablation.vip_graph_dcpl_biomedclip_adapter_pubmedclip
+import trainers.medkcoop.ablation.vip_graph_dcpl_biomedclip_adapter_pmcclip
+
+
 
 
 def print_args(args, cfg):
@@ -310,7 +290,13 @@ def main(args):
     if args.eval_only:
         trainer.load_model(args.model_dir, epoch=args.load_epoch)
         if args.heatmap:
-            trainer.heatmap_hook()
+            if hasattr(trainer, "heatmap_hook"):
+                trainer.heatmap_hook()
+            else:
+                raise SystemExit(
+                    "heatmap_hook 未实现：可视化脚本已移出仓库，"
+                    "如需热图请从备份的 heatmap*.py 恢复后自行接入。"
+                )
         else:
             trainer.test()
         return

@@ -86,20 +86,26 @@ MeDKCoOp/
 > 删除理由：论文正文只用到 8 个数据集、8 个对比方法与 16 个消融变体；其余是探索过程，
 > 保留会让"哪份代码产生论文哪张表"变得不可判定。
 
-## 6. 结构定稿后仍存在的代码层失效点（下一步修复）
+## 6. 代码适配状态
 
-结构已清理，但**代码内容按约定尚未修改**，以下引用会失效：
+已在本次完成：
 
-1. `train.py`：`import datasets.*` / `import trainers.<X>` 仍按旧路径与旧文件清单；
-   被删除的模块（busi、kneexray、LP 等）会导致 import 失败。
-2. `trainers/*`：`from trainers.prompt_templates import ...` 仍可用；但包内不再有
-   `trainers/__init__.py`（已删除），依赖 namespace package。
-3. `from clip ...`、`from clip1 ...`、`from MedSAM...`、`open_clip.src.open_clip`：
-   已移入 `third_party/`，需要 `sys.path` 引导或改 import。
-4. DASSL editable 安装仍指向 `/home/wangyijun/BiomedCoOp/Dassl.pytorch`。
-5. `scripts/` 内部仍写死 `scripts/graph_dcpl/...`、`configs/trainers/GRAPH_DCPL/...`、
-   `/home/wangyijun/ckpt/...`、`Device_id=5..9`。
-6. `--heatmap` 调用的 `heatmap_hook()` 不存在。
-7. 离线环境无法用 `hf-hub:` 拉取 BiomedCLIP，需本地权重适配。
+1. `train.py` 只导入保留下来的 15 个数据集模块与 51 个 trainer；
+2. 新增 `bootstrap.py`：把 `third_party`、`third_party/open_clip` 加入 `sys.path`，
+   并把 `hf-hub` 的 BiomedCLIP 加载重定向到 `/data/wangyijun/model/BiomedCLIP`
+   （离线可用，`HF_HUB_OFFLINE=1` 已验证）；
+3. `trainers/baselines/Zeroshot` 等跨目录 import 已改为 `trainers.baselines.<X>`；
+4. DASSL 已在 `conda medkcoop` 环境中重新 `pip install -e third_party/Dassl.pytorch`；
+5. 配置目录统一为 `configs/trainers/medkcoop/`，并删除已移除数据集的残留配置；
+6. `scripts/medkcoop/base2new.sh` 已参数化（`DATA/CKPT/GPU/SHOTS/EPOCH`），训练+评测跑通；
+7. `--heatmap` 在缺少 `heatmap_hook()` 时给出明确错误；
+8. 恢复论文字节码中 3 行 RNG 消耗代码（`mean`/`noise` 未被使用），使随机序列与原实现一致。
 
-修复顺序：import/路径 → 配置统一 → 脚本参数化 → 从字节码重建 → eval-only 等价性验证 → 逐表复现。
+仍需处理：
+
+1. `scripts/medkcoop/` 其余脚本与 `scripts/baselines/*` 仍含旧 ckpt 路径与 `Device_id`，
+   改写模板同 `base2new.sh`；
+2. cross-dataset / domain generalization 的旧产物不在磁盘，需要按论文设置重跑；
+3. 论文 Table 5 剩余 3 行消融与候选文件的对应关系待逐一对齐。
+
+验证记录见 [ENVIRONMENT.md](ENVIRONMENT.md)。

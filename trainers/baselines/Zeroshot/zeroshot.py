@@ -19,7 +19,7 @@ from clip import clip
 
 from clip.pmcclip import ModifiedResNet
 
-from trainers.CoOp.coop_clip import load_clip_to_cpu
+from trainers.baselines.CoOp.coop_clip import load_clip_to_cpu
 from trainers.prompt_templates import CUSTOM_TEMPLATES, BIOMEDCOOP_TEMPLATES
 
 from transformers import AutoTokenizer, AutoModel

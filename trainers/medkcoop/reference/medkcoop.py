@@ -22,6 +22,10 @@ from trainers.prompt_templates import BIOMEDCOOP_TEMPLATES, CUSTOM_TEMPLATES, IM
 from open_clip.src.open_clip import create_model_from_pretrained, get_tokenizer
 from MedSAM.segment_anything import sam_model_registry
 
+MEDSAM_CKPT_PATH = os.environ.get(
+    "MEDSAM_CKPT", "/data/wangyijun/model/medsam/sam_vit_b_01ec64.pth"
+)
+
 class TextEncoder(nn.Module):
     def __init__(self, biomedclip_model):
         super().__init__()
@@ -121,8 +125,7 @@ def build_image_graph(cfg, classnames, biomedclip_model, img_encoder, train_load
         # biomedclip_model = biomedclip_model.cuda()
 
     print('loading medical model')
-    MedSAM_CKPT_PATH = "/data/wangyijun/model/medsam/sam_vit_b_01ec64.pth"
-    medical_model = sam_model_registry['vit_b'](checkpoint=MedSAM_CKPT_PATH)
+    medical_model = sam_model_registry['vit_b'](checkpoint=MEDSAM_CKPT_PATH)
     medical_model.cuda()
 
     visual_net = nn.Sequential(OrderedDict([
@@ -153,6 +156,10 @@ def build_image_graph(cfg, classnames, biomedclip_model, img_encoder, train_load
             
             image_features = img_encoder(image.type(dtype))     # [4, 512]
             # tensor cuda8 torch.float16 tensor[2, 768],cuda8,torch.float16,grad_fn 8 * [2, 768] cuda8 torch.float16
+
+            # 与论文最终版字节码一致：这两行仅为保持 RNG 消耗顺序（noise 未被使用）
+            mean = torch.mean(image_features)
+            noise = torch.randn(image_features.shape).cuda().type(dtype) * mean
 
             image_features_bias = visual_net(remote_mae_feature.to(torch.float32))                        # [4, 512]
             image_features = image_features + image_features_bias.cuda()              # [4, 512]
@@ -507,8 +514,7 @@ class CustomCLIP(nn.Module):
         self.prompt_learner = MultiModalPromptLearner(cfg, classnames, biomedclip_model, base_text_features, base_img_features)
 
         print('loading medical model')
-        MedSAM_CKPT_PATH = "/data/wangyijun/model/medsam/sam_vit_b_01ec64.pth"
-        self.medical_model = sam_model_registry['vit_b'](checkpoint=MedSAM_CKPT_PATH)
+        self.medical_model = sam_model_registry['vit_b'](checkpoint=MEDSAM_CKPT_PATH)
 
         self.ctx_dim = self.prompt_learner.ctx_dim
         self.visual_net = nn.Sequential(OrderedDict([

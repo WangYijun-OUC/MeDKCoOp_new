@@ -35,7 +35,7 @@ if [ -d "$DIR" ]; then
     --seed ${SEED} \
     --trainer ${TRAINER} \
     --dataset-config-file configs/datasets/${DATASET}.yaml \
-    --config-file configs/trainers/${MODEL}/base_to_novel/${DATASET}.yaml \
+    --config-file configs/trainers/medkcoop/base_to_novel/${DATASET}.yaml \
     --output-dir ${DIR} \
     --mode train \
     --device-id ${Device_id} \
@@ -49,7 +49,7 @@ else
     --seed ${SEED} \
     --trainer ${TRAINER} \
     --dataset-config-file configs/datasets/${DATASET}.yaml \
-    --config-file configs/trainers/${MODEL}/base_to_novel/${DATASET}.yaml \
+    --config-file configs/trainers/medkcoop/base_to_novel/${DATASET}.yaml \
     --output-dir ${DIR} \
     --mode train \
     --device-id ${Device_id} \
@@ -72,7 +72,7 @@ else
     --seed ${SEED} \
     --trainer ${TRAINER} \
     --dataset-config-file configs/datasets/${DATASET}.yaml \
-    --config-file configs/trainers/${MODEL}/base_to_novel/${DATASET}.yaml \
+    --config-file configs/trainers/medkcoop/base_to_novel/${DATASET}.yaml \
     --output-dir ${DIR} \
     --model-dir ${MODEL_DIR} \
     --load-epoch ${LOADEP} \

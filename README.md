@@ -11,6 +11,7 @@ Biomedical **D**ual **K**nowledge-guided graph prompt learning（ACM MM'25）代
 ```
 MeDKCoOp/
 ├── train.py                       # 唯一入口：训练 / 评测（DASSL）
+├── bootstrap.py                   # 路径引导 + 离线 BiomedCLIP 加载（train.py 第一行导入）
 ├── configs/
 │   ├── datasets/                  # 论文 8 个数据集的 v1（base2new/few-shot）+ 7 个 v2（DG 目标域）
 │   └── trainers/                  # MeDKCoOp + 8 个 baseline 的超参
@@ -30,7 +31,7 @@ MeDKCoOp/
 │   ├── clip/  clip1/              # 两套 CLIP（PubMed/PMC 系 vs MaPLe/DPLQ 系）
 │   └── MedSAM/                    # 视觉知识分支
 ├── tools/parse_test_res.py        # 日志 → 均值/方差
-└── docs/                          # 复现方案 + 结构映射
+└── docs/                          # 环境与运行 / 复现方案 / 结构映射
 ```
 
 ## 保留的东西为什么都在
@@ -54,7 +55,7 @@ MeDKCoOp/
 
 这些内容仍可从两处找回：
 
-- git 历史：`git show 5e7ecc2:<path>`（基线提交包含整理前的全部代码文件）
+- 本地归档分支 `archive/pre-squash`（包含整理前的完整历史，未推送到远端）
 - 备份：`/home/wangyijun/backup/BiomedCoOp_2026-11-05/`（全量 tar + `repo_archived/` 非代码大文件）
 
 ## 关键外部资源
@@ -66,11 +67,23 @@ MeDKCoOp/
 | MedSAM 权重 | `/data/wangyijun/model/medsam/sam_vit_b_01ec64.pth` |
 | 实验产物 | `/data/wangyijun/ckpt/Biomed_Graph_dcpl/` 等 |
 
+## 快速开始
+
+```bash
+conda activate medkcoop
+cd /home/wangyijun/MeDKCoOp
+GPU=0 bash scripts/medkcoop/base2new.sh BTMRI1 1
+```
+
+完整环境、权重、单步命令与论文对照见 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)。
+
 ## 当前状态
 
-**结构已定稿，代码内容尚未适配**：`train.py` 的 import 仍指向旧路径，脚本内仍有旧目录与硬编码，
-DASSL 也还是 editable 指向原项目。具体清单见 [docs/STRUCTURE.md](docs/STRUCTURE.md)，
-这些问题在下一步统一修改，不改变本结构。
+- 已适配并可跑通：`train.py`、离线 BiomedCLIP 加载、`configs/trainers/medkcoop/`、
+  `scripts/medkcoop/base2new.sh`（训练 + 评测量化验证）。
+- 已修复：跨目录 import、DASSL editable 指向、`--heatmap` 缺失提示、配置目录命名。
+- 未适配：`scripts/medkcoop/` 下的其余脚本与 `scripts/baselines/*` 仍含旧 ckpt 路径与 `Device_id`，
+  改写方式与 `base2new.sh` 相同；cross-data / DG 需重跑（旧产物不在磁盘）。
 
 ## 复现规划
 

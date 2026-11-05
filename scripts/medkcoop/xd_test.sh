@@ -27,7 +27,7 @@ else
     --seed ${SEED} \
     --trainer ${TRAINER} \
     --dataset-config-file configs/datasets/${DATASET}.yaml \
-    --config-file configs/trainers/${MODEL}/few_shot/${DATASET}.yaml \
+    --config-file configs/trainers/medkcoop/few_shot/${DATASET}.yaml \
     --output-dir ${DIR} \
     --model-dir /home/wangyijun/ckpt/Biomed_Graph_dcpl/CrossData/BTMRI1/${TRAINER}/${CFG}_${SHOTS}shots/${MODEL}/seed${SEED} \
     --mode test \

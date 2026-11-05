@@ -29,7 +29,7 @@ else
     --seed ${SEED} \
     --trainer ${TRAINER} \
     --dataset-config-file configs/datasets/${DATASET}.yaml \
-    --config-file configs/trainers/${MODEL}/few_shot/${DATASET}.yaml  \
+    --config-file configs/trainers/medkcoop/few_shot/${DATASET}.yaml  \
     --mode train \
     --device-id ${Device_id} \
     --output-dir ${DIR} \
