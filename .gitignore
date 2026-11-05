@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+
+# 训练产物 / 权重 / 压缩包（数据与 ckpt 一律放在 /data）
+output*/
+ckpt/
+*.pth
+*.pth.tar*
+*.tar.gz
+*.zip
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 临时日志
+*.log
+
+# 构建生成物
+*.egg-info/
+work_dir/
