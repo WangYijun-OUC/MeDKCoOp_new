@@ -1,6 +1,9 @@
 # /data 下的权重与实验产物清理清单
 
-> 本文只做盘点与建议，**尚未删除任何文件**。删除是不可逆操作，确认后再执行第 5 节的命令。
+> **执行状态（2026-11-06）**：已按确认执行清理。本项目非最终方法模型 1043 GB、rebuttal 130 GB、
+> 未使用权重约 3.9 GB、其他项目 `MSCPT` 2.6 TB / `mgpath` 473 GB / `DiffCoOp*` 120 GB 已删除；
+> baseline 模型全部保留。日志已归档到 `/home/wangyijun/backup/cleanup_2026-11-06/`。
+> 下面的原始盘点保留作为记录，实际结果见第 8 节。
 
 ## 1. 结论
 
@@ -156,3 +159,35 @@ EOF
 3. **待确认**：第 4、6 节属于其他项目/数据集，你确认后我再处理。
 
 回复「按第 3 节删除」即可，我会先 dry-run 给你看命中列表和总量，再执行删除与自检。
+
+
+## 8. 执行结果（2026-11-06）
+
+| 项目 | 清理前 | 清理后 |
+|---|---|---|
+| `ckpt/Biomed_Graph_dcpl` | 939 GB | **27 GB**（24 个最终方法模型 + 2060 份日志 + heatmap） |
+| `ckpt/Biomed_Graph_dcpl_rebut` | 131 GB | **17 MB**（仅日志） |
+| `model/BiomedCLIP` | 2.3 GB | **1.2 GB** |
+| `model/BLIP` | 2.0 GB | 已删除 |
+| `model/BiomedCLIP_local` | 748 MB | 已删除 |
+| `ckpt/MSCPT` | 2.6 TB | 已删除 |
+| `ckpt/mgpath` | 473 GB | 已删除 |
+| `ckpt/DiffCoOp*`（4 个） | 120 GB | 已删除 |
+
+保留未动：
+
+- baseline 模型：`BiomedCoOp` 144 个、`DCPL_BiomedCLIP` 120 个、`MaPLe` 239 个、
+  `GraphAdapter` 120 个、`coop` 240 个；
+- 最终方法：`GRAPH_DCPL_NO_TXT_VIS_GRAPH` 8 数据集 × 3 seed = 24 个模型；
+- 全部 2060 份日志（另在备份目录有 tar 归档）；
+- `ckpt/MeDKCoOp`（本次验证 run）；
+- `DiffMIC`、`DiffMICv2`、`cs336`、`DiffusionClassifier` 等其他项目未动。
+
+删除清单与文件级明细：
+
+```
+/home/wangyijun/backup/cleanup_2026-11-06/
+├── MANIFEST.md
+├── files_to_delete.tsv        # 1184 个模型，1043.0 GB
+└── *.logs.tar.gz              # 各项目日志归档（25 MB）
+```

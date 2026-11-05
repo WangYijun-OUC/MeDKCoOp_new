@@ -17,8 +17,10 @@ SEED="${2:-1}"
 GPU="${GPU:-0}"
 SHOTS="${SHOTS:-16}"
 EPOCH="${EPOCH:-50}"
+EVAL_BS="${EVAL_BS:-16}"
 TRAINER="${TRAINER:-MeDKCoOp}"
 CFG="${CFG:-vit_b16_0002_b50_randflip}"
+CONFIG_DIR="${CONFIG_DIR:-$ROOT/configs/trainers/medkcoop}"
 
 export CUDA_VISIBLE_DEVICES="$GPU"
 export BIOMEDCLIP_DIR="${BIOMEDCLIP_DIR:-/data/wangyijun/model/BiomedCLIP}"
@@ -29,7 +31,7 @@ TRAIN_DIR="$BASE_DIR/train_base"
 TEST_DIR="$BASE_DIR/test_new"
 mkdir -p "$TRAIN_DIR" "$TEST_DIR"
 
-CONFIG="$ROOT/configs/trainers/medkcoop/base_to_novel/${DATASET}.yaml"
+CONFIG="$CONFIG_DIR/base_to_novel/${DATASET}.yaml"
 DATASET_CONFIG="$ROOT/configs/datasets/${DATASET}.yaml"
 [ -f "$CONFIG" ] || { echo "缺少配置: $CONFIG"; exit 1; }
 [ -f "$DATASET_CONFIG" ] || { echo "缺少配置: $DATASET_CONFIG"; exit 1; }
@@ -39,7 +41,8 @@ run_train () {
     --root "$DATA" --seed "$SEED" --trainer "$TRAINER" \
     --dataset-config-file "$DATASET_CONFIG" --config-file "$CONFIG" \
     --output-dir "$TRAIN_DIR" --mode train \
-    DATASET.NUM_SHOTS "$SHOTS" DATASET.SUBSAMPLE_CLASSES base
+    DATASET.NUM_SHOTS "$SHOTS" DATASET.SUBSAMPLE_CLASSES base \
+    DATALOADER.TEST.BATCH_SIZE "$EVAL_BS"
 }
 
 run_eval () {
@@ -48,15 +51,21 @@ run_eval () {
     --dataset-config-file "$DATASET_CONFIG" --config-file "$CONFIG" \
     --output-dir "$TEST_DIR" --model-dir "$TRAIN_DIR" --load-epoch "$EPOCH" \
     --mode test --eval-only \
-    DATASET.NUM_SHOTS "$SHOTS" DATASET.SUBSAMPLE_CLASSES new
+    DATASET.NUM_SHOTS "$SHOTS" DATASET.SUBSAMPLE_CLASSES new \
+    DATALOADER.TEST.BATCH_SIZE "$EVAL_BS"
 }
+
+if grep -q '\* accuracy:' "$TEST_DIR/log.txt" 2>/dev/null; then
+  echo "[skip] 已完成: $TEST_DIR/log.txt"
+  exit 0
+fi
 
 echo "== base2new: dataset=$DATASET seed=$SEED shots=$SHOTS gpu=$GPU trainer=$TRAINER =="
 echo "   train -> $TRAIN_DIR"
 echo "   test  -> $TEST_DIR"
 
-CKPT_FILE="$TRAIN_DIR/MultiModalPromptLearner/model.pth.tar-${EPOCH}"
-if [ -f "$CKPT_FILE" ]; then
+CKPT_FILE=$(find "$TRAIN_DIR" -name "model.pth.tar-${EPOCH}" 2>/dev/null | head -n1)
+if [ -n "$CKPT_FILE" ]; then
   echo "[skip] 已有 checkpoint: $CKPT_FILE"
 else
   run_train
