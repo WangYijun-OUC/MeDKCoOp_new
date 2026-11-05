@@ -23,7 +23,7 @@ MeDKCoOp/
 ├── scripts/
 │   ├── medkcoop/       # base2new / cross_data / domain_genera / few_shot / 消融
 │   └── baselines/      # 8 个 baseline 的脚本
-├── third_party/        # Dassl.pytorch open_clip clip clip1 MedSAM
+├── third_party/        # Dassl.pytorch open_clip clip MedSAM
 ├── tools/parse_test_res.py
 └── docs/
 ```

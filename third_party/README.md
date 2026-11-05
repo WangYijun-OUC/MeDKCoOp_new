@@ -10,11 +10,16 @@
 
 | `MedSAM/` | `medkcoop` 视觉知识分支 | 权重在 `/data/wangyijun/model/medsam/sam_vit_b_01ec64.pth` |
 
-## 为什么 clip 与 clip1 同时存在
+## clip 包的内容
 
-两者都是 CLIP，但分支不同：`clip1` 增加了 `ResidualAttentionBlock_IVLP` 等 MaPLe 需要的模块，
-`clip` 独有 `pmcclip.py`（PMC-CLIP 的 ResNet50 视觉塔）。现役 trainer 分别依赖其中之一，
-合并会改动 import 与模型代码，属于"内容整改"阶段，不在结构整理范围内。
+`third_party/clip/` 是合并后的唯一 CLIP 实现：
+
+- 标准 CLIP（`clip.load()` / `clip.model.build_model(state_dict)` 可直接用）；
+- `pmcclip.py`（PMC-CLIP 的 ResNet50 视觉塔）；
+- `clip1` 原有的 `ResidualAttentionBlock_IVLP` / `ResidualAttentionBlock_MaPLe` 分支，
+  通过 `design_details` 启用，MaPLe / DCPL / GraphAdapter 的调用方式不变。
+
+合并验证：同一份随机权重下，标准路径的 image/text 输出与合并前 `clip` 位级一致（maxdiff = 0）。
 
 ## 离线加载
 
