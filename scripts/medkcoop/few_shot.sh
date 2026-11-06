@@ -1,56 +1,37 @@
-#!/bin/bash
-
-# custom config
-DATA="/data/wangyijun/dataset"
-TRAINER=MeDKCoOp_Time
-MODEL=MeDKCoOp
-# export CUDA_VISIBLE_DEVICES=0,8
-# DATASET=$1
-LOADEP=50
-CFG=vit_b16_base2new
-# CFG=vit_b16_c2_ep15_batch4_8_2ctx_graph
-SHOTS=2
-Device_id=7
-NCTX=2
-CSC=False
-CTP=end
-
-for SEED in 1
-do
-for DATASET in CHMNIST 
-# covid ctkidney kvasir lungcolon octmnist retina BTMRI1
-# for DATASET in CHMNIST
-do 
-DIR=/data/wangyijun/ckpt/Biomed_Graph_dcpl_time/few_shot/${DATASET}/shots_${SHOTS}/${TRAINER}/nctx${NCTX}_csc${CSC}_ctp${CTP}/seed${SEED}
-if [ -d "$DIR" ]; then
-    echo "Oops! The results exist at ${DIR} (so skip this job)"
-    CUDA_VISIBLE_DEVICES=${Device_id} python train.py \
-    --root ${DATA} \
-    --seed ${SEED} \
-    --trainer ${TRAINER} \
-    --dataset-config-file configs/datasets/${DATASET}.yaml \
-    --config-file configs/trainers/medkcoop/few_shot/${DATASET}.yaml  \
-    --mode train \
-    --device-id ${Device_id} \
-    --output-dir ${DIR} \
-    TRAINER.BIOMEDCOOP.N_CTX ${NCTX} \
-    TRAINER.BIOMEDCOOP.CSC ${CSC} \
-    TRAINER.BIOMEDCOOP.CLASS_TOKEN_POSITION ${CTP} \
-    DATASET.NUM_SHOTS ${SHOTS}
-else
-    CUDA_VISIBLE_DEVICES=${Device_id} python train.py \
-    --root ${DATA} \
-    --seed ${SEED} \
-    --trainer ${TRAINER} \
-    --dataset-config-file configs/datasets/${DATASET}.yaml \
-    --config-file configs/trainers/medkcoop/few_shot/${DATASET}.yaml  \
-    --mode train \
-    --device-id ${Device_id} \
-    --output-dir ${DIR} \
-    TRAINER.BIOMEDCOOP.N_CTX ${NCTX} \
-    TRAINER.BIOMEDCOOP.CSC ${CSC} \
-    TRAINER.BIOMEDCOOP.CLASS_TOKEN_POSITION ${CTP} \
-    DATASET.NUM_SHOTS ${SHOTS}
+#!/usr/bin/env bash
+# Train and evaluate one few-shot run: DATASET SEED SHOTS.
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+DATA="${DATA:-/data/wangyijun/dataset}"
+CKPT="${CKPT:-/data/wangyijun/ckpt/MeDKCoOp}"
+DATASET="${1:-BTMRI1}"
+SEED="${2:-1}"
+SHOTS="${3:-16}"
+GPU="${GPU:-0}"
+TRAINER="${TRAINER:-GRAPH_DCPL_NO_TXT_VIS_GRAPH}"
+EPOCH="${EPOCH:-100}"
+CFG="${CFG:-vit_b16_base2new}"
+CONFIG="$ROOT/configs/trainers/medkcoop/few_shot/${DATASET}.yaml"
+DATASET_CONFIG="$ROOT/configs/datasets/${DATASET}.yaml"
+DIR="$CKPT/few_shot/$DATASET/shots_${SHOTS}/$TRAINER/$CFG/seed${SEED}"
+[[ -f "$CONFIG" && -f "$DATASET_CONFIG" ]] || { echo "缺少配置: $DATASET" >&2; exit 1; }
+export CUDA_VISIBLE_DEVICES="$GPU"
+CKPT_FILE=""
+if [[ -d "$DIR" ]]; then
+  CKPT_FILE="$(find "$DIR" -mindepth 2 -maxdepth 2 -type f -name "model.pth.tar-${EPOCH}" -print -quit)"
 fi
-done
-done
+if [[ -n "$CKPT_FILE" ]]; then
+  if [[ -s "$DIR/log.txt" ]] && grep -q '\* accuracy:' "$DIR/log.txt"; then
+    echo "[skip] 已完成: $DIR"
+    exit 0
+  fi
+  echo "checkpoint 已存在但指标缺失，请核查后使用新的 CKPT 目录重训: $DIR" >&2
+  exit 1
+fi
+mkdir -p "$DIR"
+python "$ROOT/train.py" \
+  --root "$DATA" --seed "$SEED" --trainer "$TRAINER" \
+  --dataset-config-file "$DATASET_CONFIG" --config-file "$CONFIG" \
+  --output-dir "$DIR" --mode train \
+  DATASET.NUM_SHOTS "$SHOTS" OPTIM.MAX_EPOCH "$EPOCH"
+grep -q '\* accuracy:' "$DIR/log.txt" || { echo "训练结束但指标缺失: $DIR" >&2; exit 1; }
