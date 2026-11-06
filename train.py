@@ -63,6 +63,7 @@ import trainers.baselines.MaPLe.maple
 
 # ---- 本文方法（reference 为可运行版本；ablation 对应论文 Table 4/5 与 Fig 4） ----
 import trainers.medkcoop.reference.medkcoop
+import trainers.medkcoop.fixed.medkcoop
 
 import trainers.medkcoop.ablation.vip_graph_dcpl_biomedclip_adapter_no_text_vis_graph1
 import trainers.medkcoop.ablation.vip_graph_dcpl_biomedclip_adapter_no_vis_graph
@@ -192,6 +193,9 @@ def extend_cfg(cfg):
     cfg.TRAINER.GRAPHDCPL.hidden_dim = 512
     cfg.TRAINER.GRAPHDCPL.W = 1.0
     cfg.TRAINER.GRAPHDCPL.TRANSFER_EVAL = False
+    # FIX 开关：见 docs/FIXES.md
+    cfg.TRAINER.GRAPHDCPL.GRAD_CTX = False        # True = learnable context 参与梯度
+    cfg.TRAINER.GRAPHDCPL.TRAIN_VISUAL_NET = False  # True = visual_net 纳入 optimizer
 
     # Config for DCPL
     cfg.TRAINER.DCPL = CN()

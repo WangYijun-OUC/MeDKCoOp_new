@@ -22,13 +22,16 @@ TRAINER="${TRAINER:-GRAPH_DCPL_NO_TXT_VIS_GRAPH}"
 CFG="${CFG:-vit_b16_0002_b50_randflip}"
 CONFIG_DIR="${CONFIG_DIR:-$ROOT/configs/trainers/medkcoop}"
 PYTHON_BIN="${PYTHON_BIN:-/data/wangyijun/conda/medkcoop/bin/python}"
+EXTRA_OPTS="${EXTRA_OPTS:-}"
+RUN_TAG="${RUN_TAG:-}"
+BASE_DIR_TAG="${RUN_TAG:+$RUN_TAG/}"
 [[ -x "$PYTHON_BIN" ]] || PYTHON_BIN=python
 
 export CUDA_VISIBLE_DEVICES="$GPU"
 export BIOMEDCLIP_DIR="${BIOMEDCLIP_DIR:-/data/wangyijun/model/BiomedCLIP}"
 export MEDSAM_CKPT="${MEDSAM_CKPT:-/data/wangyijun/model/medsam/sam_vit_b_01ec64.pth}"
 
-BASE_DIR="$CKPT/base2new/$DATASET/shots_${SHOTS}/${TRAINER}/${CFG}/seed${SEED}"
+BASE_DIR="$CKPT/base2new/${BASE_DIR_TAG}$DATASET/shots_${SHOTS}/${TRAINER}/${CFG}/seed${SEED}"
 TRAIN_DIR="$BASE_DIR/train_base"
 TEST_DIR="$BASE_DIR/test_new"
 mkdir -p "$TRAIN_DIR" "$TEST_DIR"
@@ -44,7 +47,7 @@ run_train () {
     --dataset-config-file "$DATASET_CONFIG" --config-file "$CONFIG" \
     --output-dir "$TRAIN_DIR" --mode train \
     DATASET.NUM_SHOTS "$SHOTS" DATASET.SUBSAMPLE_CLASSES base \
-    DATALOADER.TEST.BATCH_SIZE "$EVAL_BS" OPTIM.MAX_EPOCH "$EPOCH"
+    DATALOADER.TEST.BATCH_SIZE "$EVAL_BS" OPTIM.MAX_EPOCH "$EPOCH" $EXTRA_OPTS
 }
 
 run_eval () {
@@ -54,7 +57,7 @@ run_eval () {
     --output-dir "$TEST_DIR" --model-dir "$TRAIN_DIR" --load-epoch "$EPOCH" \
     --mode test --eval-only \
     DATASET.NUM_SHOTS "$SHOTS" DATASET.SUBSAMPLE_CLASSES new \
-    DATALOADER.TEST.BATCH_SIZE "$EVAL_BS"
+    DATALOADER.TEST.BATCH_SIZE "$EVAL_BS" $EXTRA_OPTS
 }
 
 has_accuracy () {
