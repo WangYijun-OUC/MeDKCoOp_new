@@ -3,7 +3,9 @@
 > 更新记录（2026-11-06）：`7962eac` 修复 base2new 完成判断与零值 CLI 参数；
 > `0ead634` 注册论文旧类名并修复 MeDKCoOp few-shot 入口；`c2fb05e` 修复
 > MeDKCoOp cross-data / domain 脚本及跨类别原型加载。以下是原始审查快照，
-> 其中 A1、A2、B6 和部分 B1 的“当前状态”已发生变化。Table 2/3 尚未重新训练验证。
+> 其中 A1、A2、B6 和部分 B1 的“当前状态”已发生变化。Table 2/3 尚未完整重跑；
+> 已完成一条 BTMRI1 seed1 → CHMNIST 的 100-epoch 端到端 cross-data 验证，详见
+> `docs/VALIDATION.md`。
 > 另须核查 `*v2` 数据集把同一 split 同时用于 `train_x` 与 `test` 的实验含义。
 > 后续脚本整改为每个方法各自包含完整的 base2new、few-shot、cross-data 和 DG 命令；
 > 不再依赖统一执行器。统一批量脚本只负责调用这些公开入口。CoOp 的独立 few-shot 脚本已用
@@ -17,6 +19,27 @@
 > 实际不会更新；`build_image_graph()` 还会另建一个随机初始化且不保存的局部 `visual_net`。
 > 直接“修复”会改变论文模型与既有 checkpoint 的训练语义，本轮保留原行为并明确记录，后续应
 > 作为 corrected implementation 单独做对照实验。
+
+## 当前整改状态（2026-11-06）
+
+下文主体保留最初审查快照作为问题来源；判断当前代码时以本节为准。
+
+| 原问题 | 当前状态 |
+|---|---|
+| A1 最终 trainer 注册名缺失 | 已提供兼容注册名，cross-data 权重链路已实际跑通 |
+| A2 base2new 残缺结果误跳过 | 已同时检查日志指标和 checkpoint |
+| A3 通用结果工具/调度缺失 | 已加入结果收集工具；统一脚本只调用各方法独立入口 |
+| A5 DASSL 调试断点 | 已移除 |
+| B1 方法脚本失效 | MeDKCoOp 与 8 个 baseline 均有各自的任务脚本，不依赖通用 runner |
+| B6 CLI 零值与 mode 配置 | 已修复并增加 deterministic 开关 |
+| B9 PubMed/PMC 权重路径 | 已改为本地权重路径并完成加载检查 |
+| B10 MaPLe 重复 trainer | 重复死文件已移除 |
+| B12 环境描述 | 已提供 `environment.yml` 和补全后的 `requirements.txt` |
+| B13 第三方归属 | 已加入 `NOTICE.md`；仍应在正式发布前做许可证复核 |
+| B14 重复特征计算 | 已提供缓存控制；BTMRI1 为兼容历史数据暂保留原缓存路径 |
+
+仍未关闭的高风险项是：完整 Table 2/3 尚未重跑；`visual_net` 没有进入 optimizer；
+以及 `*v2` 的目标域 `train_x`/`test` 重叠语义。三者均不能通过静默改代码解决。
 
 > 审查范围：`/home/wangyijun/MeDKCoOp`（当前 HEAD `6912767` 之后的工作区）
 > 审查方式：静态检查 + 实际运行验证（base2new 48 个 run 已完成）

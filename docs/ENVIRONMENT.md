@@ -137,7 +137,15 @@ CUDA_VISIBLE_DEVICES=0 bash scripts/medkcoop/base2new.sh BTMRI1 1
 
 ## 6. 已知的暂时限制
 
-- 只有 `configs/trainers/medkcoop/` + `scripts/medkcoop/base2new.sh` 完成了路径与新结构适配；
-  其余脚本仍含旧的 ckpt 硬编码路径与 `Device_id`，改写方式同 `base2new.sh`。
-- cross-dataset / domain generalization 的旧产物不在磁盘上（见 `docs/STRUCTURE.md`），需要重跑。
+- MeDKCoOp 与 8 个 baseline 的 base2new、few-shot、cross-data、domain-generalization 入口均已
+  完成新目录适配；各方法的单次训练/评测脚本直接调用 `train.py`，不依赖统一 runner。
+  cross-data / DG 批量入口只调用同方法的单次脚本，统一跨方法脚本只做额外批量调度。
+- cross-dataset 已完成一条 MeDKCoOp 的 BTMRI1 seed1 → CHMNIST 端到端验证，但完整的 3-seed、
+  7-target 结果以及 domain generalization 仍需重跑，不能把单条验证当作论文 Table 2/3 复现。
+- `*v2` 数据集把同一 split 同时用于 `train_x` 与 `test`；MeDKCoOp 构建目标视觉图时会读取
+  `train_x`，因此 domain-generalization 的严格实验语义仍需核实。
+- 最终 trainer 中 `visual_net` 虽被标为可训练，但未加入当前 optimizer；修正它会改变既有
+  checkpoint 的训练语义，应作为 corrected implementation 另做对照，而不是静默改动。
 - 热图脚本已移出仓库，`--heatmap` 会给出明确提示。
+
+实际运行记录和静态验收见 `docs/VALIDATION.md`。

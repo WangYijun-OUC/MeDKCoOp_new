@@ -82,8 +82,11 @@ GPU=0 bash scripts/medkcoop/base2new.sh BTMRI1 1
 
 - 已量化复现论文 base2new 主表，详见 `docs/RESULTS.md`。
 - MeDKCoOp 与 8 个 baseline 均提供独立的 base2new、few-shot、cross-data、domain-generalization
-  入口；公共执行逻辑负责参数检查、断点与残缺结果保护，详见 `scripts/README.md`。
+  入口；各方法自己的训练/评测脚本直接调用 `train.py`，批量入口只调用同目录下的单次脚本，
+  详见 `scripts/README.md`。`scripts/run_all_methods.sh` 仅额外用于调用这些独立方法入口。
 - 已用 CoOp 做 1-epoch few-shot 与跨数据集真实运行验证，并验证 ZeroshotBiomedCLIP 评测入口。
+- MeDKCoOp 已完成一次 BTMRI1 16-shot、seed 1、100 epoch 源域训练，并由独立的
+  `xd_test.sh` 加载 checkpoint 完成 CHMNIST 目标域评测；记录见 `docs/VALIDATION.md`。
 - cross-data / domain-generalization 的完整三种子结果仍需重跑；`*v2` 数据使用方式的解释限制见
   `scripts/README.md`。
 

@@ -1,7 +1,8 @@
 # 实验脚本
 
-每个方法目录都包含完整的独立运行脚本，脚本内直接调用 `train.py`，不依赖统一执行器。
-额外的 `scripts/run_all_methods.sh` 只用于维护者批量调度。
+每个方法目录都包含完整的独立运行脚本；其中 base2new、few-shot、`xd_train`、`xd_test`
+直接调用 `train.py`，cross-data / DG 批量入口只调用同一方法目录内的 `xd_*`。它们不依赖
+跨方法统一执行器。额外的 `scripts/run_all_methods.sh` 只用于维护者批量调度。
 
 ## 方法目录
 

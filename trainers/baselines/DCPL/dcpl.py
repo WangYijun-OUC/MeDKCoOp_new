@@ -400,13 +400,6 @@ class DCPL_CLIP(TrainerX):
             optim.zero_grad()
             loss.backward()
             optim.step()
-
-
-        # output_dir = "/home/wangyijun/ckpt/${TRAINER}/base2new/train_base/${DATASET}/shots_${SHOTS}/${TRAINER}/${CFG}/seed${SEED}/loss.txt"
-        # filename = os.path.join(self.cfg.OUTPUT_DIR, "/loss.txt")
-        # with open(filename, 'a') as f:
-        #     f.write(str(loss.item()) + '\n')
-
         loss_summary = {"loss": loss.item()}
 
         if (self.batch_idx + 1) == self.num_batches:
