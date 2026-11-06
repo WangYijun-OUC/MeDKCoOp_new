@@ -48,13 +48,16 @@
 > 这两个数据集偏差的方向一致（复现偏低），与"目标原型噪声大"的解释相容，
 > 不是脚本或 checkpoint 加载的问题（已用同参数、同 seed、100 epoch 复核）。
 
-## 4. domain generalization（进行中）
+## 4. domain generalization（未完成，被硬件中断）
 
-DG 使用 `*v2` 数据集作为目标域。当前状态：
+DG 使用 `*v2` 数据集作为目标域。第一轮 21 个评测全部失败（`EVAL_BS=16` 时
+MedSAM 在 v2 更大的测试集上 OOM，且 `xd_test.sh` 当时在失败后仍返回 0，掩盖了问题）。
+修复脚本与 chunk 大小后重新排队时，**GPU5 报 Xid 79（GPU has fallen off the bus），
+CUDA 驱动随后对所有进程不可用**，实验被迫中止。
 
-| 目标 | 状态 |
-|---|---|
-| CHMNISTv2 / covidv2 / ctkidneyv2 / lungcolonv2 / retinav2 / kvasirv2 / octmnistv2 | 评测中 |
+已完成的部分：`covidv2` 2 个 seed（61.99，论文 63.37，Δ −1.38）。
+其余 6 个目标域（CHMNISTv2 / ctkidneyv2 / lungcolonv2 / retinav2 / octmnistv2 / kvasirv2）
+待机器重启后按下面的命令补跑。
 
 **已知风险（实验语义，不是 bug）**：`datasets/*v2.py` 把同一份 split 同时赋给
 `train_x` 与 `test`（`super().__init__(train_x=data, test=data)`）。而 MeDKCoOp 会用
