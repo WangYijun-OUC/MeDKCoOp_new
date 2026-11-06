@@ -530,8 +530,13 @@ class CustomCLIP(nn.Module):
         self.tokenized_prompts = self.prompt_learner.tokenized_prompts
         logit_scale = self.logit_scale.exp()        # tensor(100., device='cuda:7')
         
-        with torch.no_grad():           
-            medical_feature = self.medical_model.image_encoder(nn.functional.interpolate(image, (1024, 1024)))
+        with torch.no_grad():
+            # MedSAM 的 1024x1024 注意力很吃显存：分块前向，数值与整批一致
+            _med_in = nn.functional.interpolate(image, (1024, 1024))
+            medical_feature = torch.cat(
+                [self.medical_model.image_encoder(chunk) for chunk in torch.split(_med_in, 4, dim=0)],
+                dim=0,
+            )
             mb,mc,mh,mw = medical_feature.shape
             medical_feature = medical_feature.view(mb,mc,mh*mw)
             remote_mae_feature = medical_feature.mean(dim=-1).type(self.dtype)

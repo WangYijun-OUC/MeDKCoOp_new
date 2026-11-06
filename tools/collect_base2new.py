@@ -6,6 +6,7 @@
 """
 
 import argparse
+import glob
 import os
 import re
 from collections import defaultdict
@@ -65,6 +66,19 @@ def last_acc(path):
     return val
 
 
+def acc_from_dir(dirpath):
+    """主日志为空时（DASSL 重跑会把旧日志改名），回退到最新的时间戳日志。"""
+    main = os.path.join(dirpath, "log.txt")
+    val = last_acc(main)
+    if val is not None:
+        return val
+    for cand in sorted(glob.glob(os.path.join(dirpath, "log.txt-*")), reverse=True):
+        val = last_acc(cand)
+        if val is not None:
+            return val
+    return None
+
+
 def hm(b, n):
     return 0.0 if (b + n) == 0 else 2 * b * n / (b + n)
 
@@ -83,13 +97,11 @@ def main():
         for ds, paper_name in DATASETS:
             base_vals, new_vals = [], []
             for seed in seeds:
-                base_log = os.path.join(
+                seed_dir = os.path.join(
                     args.root, "base2new", ds, "shots_16", trainer,
-                    "vit_b16_0002_b50_randflip", f"seed{seed}", "train_base", "log.txt")
-                new_log = os.path.join(
-                    args.root, "base2new", ds, "shots_16", trainer,
-                    "vit_b16_0002_b50_randflip", f"seed{seed}", "test_new", "log.txt")
-                b, n = last_acc(base_log), last_acc(new_log)
+                    "vit_b16_0002_b50_randflip", f"seed{seed}")
+                b = acc_from_dir(os.path.join(seed_dir, "train_base"))
+                n = acc_from_dir(os.path.join(seed_dir, "test_new"))
                 if b is not None:
                     base_vals.append(b)
                 if n is not None:
