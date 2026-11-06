@@ -1,6 +1,6 @@
 # scripts
 
-批量启动器，按方法分组。**脚本内容未改动**，仍保留旧路径与硬编码，修复安排在内容整改阶段。
+启动脚本按方法分组。每个方法保留独立入口；公共逻辑可以复用，但复现者从对应方法目录启动。
 
 ```
 scripts/
@@ -18,7 +18,24 @@ scripts/
     ├── graph_adapter/ zeroshot/
 ```
 
-## 使用前必读（全部属于内容整改范围）
+## MeDKCoOp 当前入口
+
+从仓库根目录运行。`DATA`、`CKPT`、`GPU` 可用环境变量覆盖；默认分别指向本机数据目录、
+`/data/wangyijun/ckpt/MeDKCoOp` 和 GPU 0。
+
+```bash
+bash scripts/medkcoop/base2new.sh BTMRI1 1
+bash scripts/medkcoop/few_shot.sh BTMRI1 1 16
+bash scripts/medkcoop/xd_train.sh BTMRI1 1
+bash scripts/medkcoop/xd_test.sh CHMNIST 1 BTMRI1
+bash scripts/medkcoop/cross_data_eval.sh
+bash scripts/medkcoop/domain_genera.sh
+```
+
+跨数据集和领域泛化入口已接通，但尚未完成论文 Table 2/3 的三种子数值验证。
+`MODEL_DIR` 可覆盖目标评测时的来源 checkpoint 路径。
+
+## 尚待整理的旧脚本
 
 1. 脚本内部仍调用 `bash scripts/graph_dcpl/xd_test.sh ...`，目录已改名为 `scripts/medkcoop/`。
 2. `--config-file` 多写 `configs/trainers/GRAPH_DCPL/...`，该目录不存在；实际用

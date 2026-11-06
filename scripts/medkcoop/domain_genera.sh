@@ -1,14 +1,10 @@
-for SEED in 1 2 3
-do
-    # bash scripts/medkcoop/xd_test.sh BTMRI1v2 ${SEED}
-    bash scripts/medkcoop/xd_test.sh CHMNISTv2 ${SEED}
-    bash scripts/medkcoop/xd_test.sh CCBTMv2 ${SEED}
-    bash scripts/medkcoop/xd_test.sh covidv2 ${SEED}
-    bash scripts/medkcoop/xd_test.sh ctkidneyv2 ${SEED}
-    bash scripts/medkcoop/xd_test.sh dermamnistv2 ${SEED}
-    bash scripts/medkcoop/xd_test.sh lungcolonv2 ${SEED}
-    bash scripts/medkcoop/xd_test.sh retinav2 ${SEED}
-    bash scripts/medkcoop/xd_test.sh kneexrayv2 ${SEED}
-    bash scripts/medkcoop/xd_test.sh octmnistv2 ${SEED}
-    bash scripts/medkcoop/xd_test.sh kvasirv2 ${SEED}
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+SOURCE="${SOURCE:-BTMRI1}"
+for seed in 1 2 3; do
+  bash "$ROOT/scripts/medkcoop/xd_train.sh" "$SOURCE" "$seed"
+  for target in CHMNISTv2 covidv2 ctkidneyv2 lungcolonv2 retinav2 octmnistv2 kvasirv2; do
+    bash "$ROOT/scripts/medkcoop/xd_test.sh" "$target" "$seed" "$SOURCE"
+  done
 done

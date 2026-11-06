@@ -1,37 +1,31 @@
-#!/bin/bash
-
-#cd ../..
-
-# custom config
-DATA="/data/wangyijun/dataset"
-DATASET=$1
-SEED=$2
-TRAINER=GRAPH_DCPL_NO_TXT_VIS_GRAPH
-MODEL=GRAPH_DCPL
-CFG=vit_b16_base2new
-
-SHOTS=16
-# DESCRIPTOR_PATH=descriptors/descriptors_${DATASET}.json  # descriptor path
-Device_id=9
-# LOADEP=50
-
-DIR=/home/wangyijun/ckpt/Biomed_Graph_dcpl/CrossData/evaluation/${TRAINER}/${CFG}_${SHOTS}shots/${DATASET}/seed${SEED}
-if [ -d "$DIR" ]; then
-    echo "Results are available in ${DIR}. Skip this job"
-
-else
-    echo "Run this job and save the output to ${DIR}"
-
-    CUDA_VISIBLE_DEVICES=${Device_id} python train.py \
-    --root ${DATA} \
-    --seed ${SEED} \
-    --trainer ${TRAINER} \
-    --dataset-config-file configs/datasets/${DATASET}.yaml \
-    --config-file configs/trainers/medkcoop/few_shot/${DATASET}.yaml \
-    --output-dir ${DIR} \
-    --model-dir /home/wangyijun/ckpt/Biomed_Graph_dcpl/CrossData/BTMRI1/${TRAINER}/${CFG}_${SHOTS}shots/${MODEL}/seed${SEED} \
-    --mode test \
-    --device-id ${Device_id} \
-    --load-epoch 100 \
-    --eval-only
+#!/usr/bin/env bash
+# Cross-data target evaluation. Usage: xd_test.sh TARGET SEED [SOURCE=BTMRI1].
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+TARGET="${1:?需指定目标数据集}"
+SEED="${2:-1}"
+SOURCE="${3:-BTMRI1}"
+DATA="${DATA:-/data/wangyijun/dataset}"
+CKPT="${CKPT:-/data/wangyijun/ckpt/MeDKCoOp}"
+GPU="${GPU:-0}"
+SHOTS="${SHOTS:-16}"
+EPOCH="${EPOCH:-100}"
+TRAINER="${TRAINER:-GRAPH_DCPL_NO_TXT_VIS_GRAPH}"
+MODEL_DIR="${MODEL_DIR:-$CKPT/cross_data/source/$SOURCE/shots_${SHOTS}/$TRAINER/seed${SEED}}"
+CONFIG="$ROOT/configs/trainers/medkcoop/few_shot/${TARGET}.yaml"
+DATASET_CONFIG="$ROOT/configs/datasets/${TARGET}.yaml"
+DIR="$CKPT/cross_data/evaluation/$SOURCE/$TARGET/shots_${SHOTS}/$TRAINER/seed${SEED}"
+[[ -f "$CONFIG" && -f "$DATASET_CONFIG" ]] || { echo "缺少目标配置: $TARGET" >&2; exit 1; }
+[[ -d "$MODEL_DIR" ]] && [[ -n "$(find "$MODEL_DIR" -mindepth 2 -maxdepth 2 -type f -name "model.pth.tar-${EPOCH}" -print -quit)" ]] || { echo "来源模型缺失: $MODEL_DIR" >&2; exit 1; }
+if [[ -s "$DIR/log.txt" ]] && grep -q '\* accuracy:' "$DIR/log.txt"; then
+  echo "[skip] 已完成: $DIR"; exit 0
 fi
+export CUDA_VISIBLE_DEVICES="$GPU"
+mkdir -p "$DIR"
+python "$ROOT/train.py" --root "$DATA" --seed "$SEED" --trainer "$TRAINER" \
+  --dataset-config-file "$DATASET_CONFIG" --config-file "$CONFIG" \
+  --output-dir "$DIR" --model-dir "$MODEL_DIR" --load-epoch "$EPOCH" \
+  --mode test --eval-only \
+  DATASET.NUM_SHOTS "$SHOTS" DATASET.SUBSAMPLE_CLASSES all \
+  TRAINER.GRAPHDCPL.TRANSFER_EVAL True
+grep -q '\* accuracy:' "$DIR/log.txt" || { echo "目标评测缺少指标: $DIR" >&2; exit 1; }

@@ -1,24 +1,10 @@
-for SEED in 1 2 3
-do
-    # bash scripts/medkcoop/xd_test.sh BTMRI1 ${SEED}
-    bash scripts/medkcoop/xd_test.sh CHMNIST ${SEED}
-    # bash scripts/medkcoop/xd_test.sh CCBTM ${SEED}
-    bash scripts/medkcoop/xd_test.sh covid ${SEED}
-    bash scripts/medkcoop/xd_test.sh ctkidney ${SEED}
-    # bash scripts/medkcoop/xd_test.sh dermamnist ${SEED}
-    bash scripts/medkcoop/xd_test.sh lungcolon ${SEED}
-    bash scripts/medkcoop/xd_test.sh retina ${SEED}
-    # bash scripts/medkcoop/xd_test.sh kneexray ${SEED}
-    bash scripts/medkcoop/xd_test.sh octmnist ${SEED}
-    bash scripts/medkcoop/xd_test.sh kvasir ${SEED}
-    bash scripts/medkcoop/xd_test.sh CHMNISTv2 ${SEED}
-    # bash scripts/medkcoop/xd_test.sh CCBTMv2 ${SEED}
-    bash scripts/medkcoop/xd_test.sh covidv2 ${SEED}
-    bash scripts/medkcoop/xd_test.sh ctkidneyv2 ${SEED}
-    # bash scripts/medkcoop/xd_test.sh dermamnistv2 ${SEED}
-    bash scripts/medkcoop/xd_test.sh lungcolonv2 ${SEED}
-    bash scripts/medkcoop/xd_test.sh retinav2 ${SEED}
-    # bash scripts/medkcoop/xd_test.sh kneexrayv2 ${SEED}
-    bash scripts/medkcoop/xd_test.sh octmnistv2 ${SEED}
-    bash scripts/medkcoop/xd_test.sh kvasirv2 ${SEED}
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+SOURCE="${SOURCE:-BTMRI1}"
+for seed in 1 2 3; do
+  bash "$ROOT/scripts/medkcoop/xd_train.sh" "$SOURCE" "$seed"
+  for target in CHMNIST covid ctkidney lungcolon retina octmnist kvasir; do
+    bash "$ROOT/scripts/medkcoop/xd_test.sh" "$target" "$seed" "$SOURCE"
+  done
 done

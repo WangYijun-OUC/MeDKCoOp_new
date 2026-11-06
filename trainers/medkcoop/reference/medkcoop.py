@@ -734,6 +734,12 @@ class MeDKCoOp(TrainerX):
             if "prompt_learner.base_img_features" in state_dict:
                 del state_dict["prompt_learner.base_img_features"]
 
+            # Cross-dataset evaluation builds target-class prototypes locally.
+            # Source-class classifier weights cannot be transferred across labels.
+            if self.cfg.TRAINER.GRAPHDCPL.TRANSFER_EVAL:
+                state_dict.pop("prompt_learner.fc.weight", None)
+                state_dict.pop("prompt_learner.new_fc.weight", None)
+
             # if "prompt_learner.fc" in state_dict:
             #     del state_dict["prompt_learner.fc"]
 

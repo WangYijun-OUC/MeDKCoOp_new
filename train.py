@@ -190,6 +190,7 @@ def extend_cfg(cfg):
     cfg.TRAINER.GRAPHDCPL.N_PROMPTS = 50
     cfg.TRAINER.GRAPHDCPL.hidden_dim = 512
     cfg.TRAINER.GRAPHDCPL.W = 1.0
+    cfg.TRAINER.GRAPHDCPL.TRANSFER_EVAL = False
 
     # Config for DCPL
     cfg.TRAINER.DCPL = CN()
