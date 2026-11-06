@@ -42,7 +42,7 @@ run_train () {
     --dataset-config-file "$DATASET_CONFIG" --config-file "$CONFIG" \
     --output-dir "$TRAIN_DIR" --mode train \
     DATASET.NUM_SHOTS "$SHOTS" DATASET.SUBSAMPLE_CLASSES base \
-    DATALOADER.TEST.BATCH_SIZE "$EVAL_BS"
+    DATALOADER.TEST.BATCH_SIZE "$EVAL_BS" OPTIM.MAX_EPOCH "$EPOCH"
 }
 
 run_eval () {
@@ -55,8 +55,17 @@ run_eval () {
     DATALOADER.TEST.BATCH_SIZE "$EVAL_BS"
 }
 
-if grep -q '\* accuracy:' "$TEST_DIR/log.txt" 2>/dev/null; then
-  echo "[skip] 已完成: $TEST_DIR/log.txt"
+has_accuracy () {
+  [ -s "$1" ] && grep -q '\* accuracy:' "$1"
+}
+
+find_checkpoint () {
+  find "$TRAIN_DIR" -mindepth 2 -maxdepth 2 -type f -name "model.pth.tar-${EPOCH}" -print -quit
+}
+
+CKPT_FILE="$(find_checkpoint)"
+if [ -n "$CKPT_FILE" ] && has_accuracy "$TRAIN_DIR/log.txt" && has_accuracy "$TEST_DIR/log.txt"; then
+  echo "[skip] base 和 new 指标均已完成: $BASE_DIR"
   exit 0
 fi
 
@@ -64,14 +73,22 @@ echo "== base2new: dataset=$DATASET seed=$SEED shots=$SHOTS gpu=$GPU trainer=$TR
 echo "   train -> $TRAIN_DIR"
 echo "   test  -> $TEST_DIR"
 
-CKPT_FILE=$(find "$TRAIN_DIR" -name "model.pth.tar-${EPOCH}" 2>/dev/null | head -n1)
 if [ -n "$CKPT_FILE" ]; then
-  echo "[skip] 已有 checkpoint: $CKPT_FILE"
+  if ! has_accuracy "$TRAIN_DIR/log.txt"; then
+    echo "错误: checkpoint 已存在，但 base 指标缺失: $TRAIN_DIR" >&2
+    echo "请先核查已有日志和 checkpoint，再选择新的 CKPT 目录重训。" >&2
+    exit 1
+  fi
+  echo "[skip] 已有 checkpoint 和 base 指标: $CKPT_FILE"
 else
   run_train
+  has_accuracy "$TRAIN_DIR/log.txt" || { echo "错误: 训练结束但 base 指标缺失" >&2; exit 1; }
+  CKPT_FILE="$(find_checkpoint)"
+  [ -n "$CKPT_FILE" ] || { echo "错误: 训练结束但 epoch $EPOCH 的 checkpoint 缺失" >&2; exit 1; }
 fi
 
 run_eval
+has_accuracy "$TEST_DIR/log.txt" || { echo "错误: 评测结束但 new 指标缺失" >&2; exit 1; }
 
 echo "== 结果 =="
 grep -E "\* accuracy:|\* total:" "$TRAIN_DIR/log.txt" | tail -2 || true
