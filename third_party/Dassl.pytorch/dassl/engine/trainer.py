@@ -586,7 +586,6 @@ class SimpleTrainer(TrainerBase):
 
     @torch.no_grad()
     def test(self, split=None):
-        # import pdb; pdb.set_trace()
         """A generic testing pipeline."""
         self.set_model_mode("eval")
         self.evaluator.reset()
@@ -614,15 +613,6 @@ class SimpleTrainer(TrainerBase):
 
         return list(results.values())[0]
     
-    @torch.no_grad()
-    def test1(self, split=None):
-        """A generic testing pipeline."""
-        self.set_model_mode("eval")
-        self.evaluator.reset()
-
-        print("1111111")
-        import pdb; pdb.set_trace()
-
     def model_inference(self, input):
         return self.model(input)
 

@@ -21,6 +21,8 @@ EVAL_BS="${EVAL_BS:-16}"
 TRAINER="${TRAINER:-MeDKCoOp}"
 CFG="${CFG:-vit_b16_0002_b50_randflip}"
 CONFIG_DIR="${CONFIG_DIR:-$ROOT/configs/trainers/medkcoop}"
+PYTHON_BIN="${PYTHON_BIN:-/data/wangyijun/conda/medkcoop/bin/python}"
+[[ -x "$PYTHON_BIN" ]] || PYTHON_BIN=python
 
 export CUDA_VISIBLE_DEVICES="$GPU"
 export BIOMEDCLIP_DIR="${BIOMEDCLIP_DIR:-/data/wangyijun/model/BiomedCLIP}"
@@ -37,7 +39,7 @@ DATASET_CONFIG="$ROOT/configs/datasets/${DATASET}.yaml"
 [ -f "$DATASET_CONFIG" ] || { echo "缺少配置: $DATASET_CONFIG"; exit 1; }
 
 run_train () {
-  python "$ROOT/train.py" \
+  "$PYTHON_BIN" "$ROOT/train.py" \
     --root "$DATA" --seed "$SEED" --trainer "$TRAINER" \
     --dataset-config-file "$DATASET_CONFIG" --config-file "$CONFIG" \
     --output-dir "$TRAIN_DIR" --mode train \
@@ -46,7 +48,7 @@ run_train () {
 }
 
 run_eval () {
-  python "$ROOT/train.py" \
+  "$PYTHON_BIN" "$ROOT/train.py" \
     --root "$DATA" --seed "$SEED" --trainer "$TRAINER" \
     --dataset-config-file "$DATASET_CONFIG" --config-file "$CONFIG" \
     --output-dir "$TEST_DIR" --model-dir "$TRAIN_DIR" --load-epoch "$EPOCH" \

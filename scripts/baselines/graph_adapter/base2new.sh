@@ -1,66 +1,41 @@
-#!/bin/bash
-
-#cd ../..
-
-# custom config
-DATA="/data/wangyijun/dataset"
-MODEL=PMCCLIP
-METHOD=GraphCLIP
-TRAINER=GraphCLIP_${MODEL}
-
-DATASET=$1
-
-Device_id=6
-CFG=rn50_ep25_b256_lr_0_001_adamw
-# CFG=vit_b16_c2_ep15_batch4_8_2ctx_graph
-SHOTS=16
-# DESCRIPTOR_PATH=descriptors/descriptors_${DATASET}.json  # descriptor path
-# --descriptor-path ${DESCRIPTOR_PATH} \
-LOADEP=25
-
-for SEED in 1 2 3
-do
-for DATASET in CHMNIST covid ctkidney kvasir lungcolon octmnist retina BTMRI1
-# for DATASET in BTMRI
-do 
-DIR=/data/wangyijun/ckpt/Biomed_Graph_dcpl/ablation/train_base/${DATASET}/shots_${SHOTS}/${TRAINER}/${CFG}/seed${SEED}
-# DIR=/home/wangyijun/ckpt/TEST/base2new/train_base/${DATASET}/shots_${SHOTS}/${TRAINER}/${CFG}/seed${SEED}
-if [ -d "$DIR" ]; then
-    echo "Results are available in ${DIR}. Resuming..."
-
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+DATA="${DATA:-/data/wangyijun/dataset}"
+CKPT="${CKPT:-/data/wangyijun/ckpt/MeDKCoOp}"
+GPU="${GPU:-0}"
+PYTHON_BIN="${PYTHON_BIN:-/data/wangyijun/conda/medkcoop/bin/python}"
+[[ -x "$PYTHON_BIN" ]] || PYTHON_BIN=python
+TRAINER="${TRAINER:-GraphCLIP}"
+export CUDA_VISIBLE_DEVICES="$GPU"
+has_accuracy() { [[ -s "$1" ]] && grep -q '\\* accuracy:' "$1"; }
+checkpoint() { find "$1" -mindepth 2 -maxdepth 3 -type f -name "model.pth.tar-$2" -print -quit 2>/dev/null; }
+# Usage: base2new.sh [DATASET=BTMRI1] [SEED=1]
+DATASET="${1:-BTMRI1}"
+SEED="${2:-1}"
+SHOTS="${SHOTS:-16}"
+EPOCH="${EPOCH:-50}"
+EVAL_BS="${EVAL_BS:-16}"
+CONFIG="$ROOT/configs/trainers/GraphCLIP/base_to_novel/${DATASET}.yaml"
+DATASET_CONFIG="$ROOT/configs/datasets/${DATASET}.yaml"
+RUN_ROOT="$CKPT/graph_adapter/base2new/$DATASET/shots_${SHOTS}/$TRAINER/seed${SEED}"
+TRAIN_DIR="$RUN_ROOT/train_base"
+TEST_DIR="$RUN_ROOT/test_new"
+[[ -f "$CONFIG" && -f "$DATASET_CONFIG" ]] || { echo "缺少配置: $DATASET" >&2; exit 2; }
+if [[ -n "$(checkpoint "$TRAIN_DIR" "$EPOCH")" ]] && has_accuracy "$TRAIN_DIR/log.txt" && has_accuracy "$TEST_DIR/log.txt"; then echo "[skip] $RUN_ROOT"; exit 0; fi
+if [[ -n "$(checkpoint "$TRAIN_DIR" "$EPOCH")" ]]; then
+  has_accuracy "$TRAIN_DIR/log.txt" || { echo "checkpoint 存在但 base 指标缺失: $TRAIN_DIR" >&2; exit 1; }
 else
-    echo "Run this job and save the output to ${DIR}"
-    CUDA_VISIBLE_DEVICES=${Device_id} python train.py \
-    --root ${DATA} \
-    --seed ${SEED} \
-    --trainer ${TRAINER} \
-    --dataset-config-file configs/datasets/${DATASET}.yaml \
-    --config-file configs/trainers/${METHOD}/${CFG}.yaml \
-    --output-dir ${DIR} \
-    --device-id ${Device_id} \
-    DATASET.NUM_SHOTS ${SHOTS} \
-    DATASET.SUBSAMPLE_CLASSES base
+  mkdir -p "$TRAIN_DIR"
+  "$PYTHON_BIN" "$ROOT/train.py" --root "$DATA" --seed "$SEED" --trainer "$TRAINER" \
+    --dataset-config-file "$DATASET_CONFIG" --config-file "$CONFIG" --output-dir "$TRAIN_DIR" --mode train \
+    DATASET.NUM_SHOTS "$SHOTS" DATASET.SUBSAMPLE_CLASSES base DATALOADER.TEST.BATCH_SIZE "$EVAL_BS" OPTIM.MAX_EPOCH "$EPOCH"
+  has_accuracy "$TRAIN_DIR/log.txt" || { echo "base 指标缺失: $TRAIN_DIR" >&2; exit 1; }
+  [[ -n "$(checkpoint "$TRAIN_DIR" "$EPOCH")" ]] || { echo "checkpoint 缺失: $TRAIN_DIR" >&2; exit 1; }
 fi
-COMMON_DIR=${DATASET}/shots_${SHOTS}/${TRAINER}/${CFG}/seed${SEED}
-MODEL_DIR=/data/wangyijun/ckpt/Biomed_Graph_dcpl/ablation/train_base/${COMMON_DIR}
-DIR=/data/wangyijun/ckpt/Biomed_Graph_dcpl/ablation/test_new/${COMMON_DIR}
-if [ -d "$DIR" ]; then
-    echo "Oops! The results exist at ${DIR} (so skip this job)"
-    echo "Resuming..."
-
-else
-    CUDA_VISIBLE_DEVICES=${Device_id} python train.py \
-    --root ${DATA} \
-    --seed ${SEED} \
-    --trainer ${TRAINER} \
-    --dataset-config-file configs/datasets/${DATASET}.yaml \
-    --config-file configs/trainers/${METHOD}/${CFG}.yaml \
-    --output-dir ${DIR} \
-    --model-dir ${MODEL_DIR} \
-    --load-epoch ${LOADEP} \
-    --eval-only \
-    DATASET.NUM_SHOTS ${SHOTS} \
-    DATASET.SUBSAMPLE_CLASSES new
-fi
-done
-done
+mkdir -p "$TEST_DIR"
+"$PYTHON_BIN" "$ROOT/train.py" --root "$DATA" --seed "$SEED" --trainer "$TRAINER" \
+  --dataset-config-file "$DATASET_CONFIG" --config-file "$CONFIG" --output-dir "$TEST_DIR" \
+  --model-dir "$TRAIN_DIR" --load-epoch "$EPOCH" --mode test --eval-only \
+  DATASET.NUM_SHOTS "$SHOTS" DATASET.SUBSAMPLE_CLASSES new DATALOADER.TEST.BATCH_SIZE "$EVAL_BS"
+has_accuracy "$TEST_DIR/log.txt" || { echo "new 指标缺失: $TEST_DIR" >&2; exit 1; }

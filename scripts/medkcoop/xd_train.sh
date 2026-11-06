@@ -10,6 +10,8 @@ GPU="${GPU:-0}"
 SHOTS="${SHOTS:-16}"
 EPOCH="${EPOCH:-100}"
 TRAINER="${TRAINER:-GRAPH_DCPL_NO_TXT_VIS_GRAPH}"
+PYTHON_BIN="${PYTHON_BIN:-/data/wangyijun/conda/medkcoop/bin/python}"
+[[ -x "$PYTHON_BIN" ]] || PYTHON_BIN=python
 CONFIG="$ROOT/configs/trainers/medkcoop/few_shot/${SOURCE}.yaml"
 DATASET_CONFIG="$ROOT/configs/datasets/${SOURCE}.yaml"
 DIR="$CKPT/cross_data/source/$SOURCE/shots_${SHOTS}/$TRAINER/seed${SEED}"
@@ -25,7 +27,7 @@ if [[ -d "$DIR" ]]; then
   fi
 fi
 mkdir -p "$DIR"
-python "$ROOT/train.py" --root "$DATA" --seed "$SEED" --trainer "$TRAINER" \
+"$PYTHON_BIN" "$ROOT/train.py" --root "$DATA" --seed "$SEED" --trainer "$TRAINER" \
   --dataset-config-file "$DATASET_CONFIG" --config-file "$CONFIG" \
   --output-dir "$DIR" --mode train \
   DATASET.NUM_SHOTS "$SHOTS" OPTIM.MAX_EPOCH "$EPOCH"

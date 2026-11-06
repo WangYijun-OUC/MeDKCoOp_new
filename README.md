@@ -79,11 +79,12 @@ GPU=0 bash scripts/medkcoop/base2new.sh BTMRI1 1
 
 ## 当前状态
 
-- 已适配并可跑通：`train.py`、离线 BiomedCLIP 加载、`configs/trainers/medkcoop/`、
-  `scripts/medkcoop/base2new.sh`（训练 + 评测量化验证）。
-- 已修复：跨目录 import、DASSL editable 指向、`--heatmap` 缺失提示、配置目录命名。
-- 未适配：`scripts/medkcoop/` 下的其余脚本与 `scripts/baselines/*` 仍含旧 ckpt 路径与 `Device_id`，
-  改写方式与 `base2new.sh` 相同；cross-data / DG 需重跑（旧产物不在磁盘）。
+- 已量化复现论文 base2new 主表，详见 `docs/RESULTS.md`。
+- MeDKCoOp 与 8 个 baseline 均提供独立的 base2new、few-shot、cross-data、domain-generalization
+  入口；公共执行逻辑负责参数检查、断点与残缺结果保护，详见 `scripts/README.md`。
+- 已用 CoOp 做 1-epoch few-shot 与跨数据集真实运行验证，并验证 ZeroshotBiomedCLIP 评测入口。
+- cross-data / domain-generalization 的完整三种子结果仍需重跑；`*v2` 数据使用方式的解释限制见
+  `scripts/README.md`。
 
 ## 复现规划
 

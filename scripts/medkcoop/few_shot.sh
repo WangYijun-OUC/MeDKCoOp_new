@@ -11,6 +11,8 @@ GPU="${GPU:-0}"
 TRAINER="${TRAINER:-GRAPH_DCPL_NO_TXT_VIS_GRAPH}"
 EPOCH="${EPOCH:-100}"
 CFG="${CFG:-vit_b16_base2new}"
+PYTHON_BIN="${PYTHON_BIN:-/data/wangyijun/conda/medkcoop/bin/python}"
+[[ -x "$PYTHON_BIN" ]] || PYTHON_BIN=python
 CONFIG="$ROOT/configs/trainers/medkcoop/few_shot/${DATASET}.yaml"
 DATASET_CONFIG="$ROOT/configs/datasets/${DATASET}.yaml"
 DIR="$CKPT/few_shot/$DATASET/shots_${SHOTS}/$TRAINER/$CFG/seed${SEED}"
@@ -29,7 +31,7 @@ if [[ -n "$CKPT_FILE" ]]; then
   exit 1
 fi
 mkdir -p "$DIR"
-python "$ROOT/train.py" \
+"$PYTHON_BIN" "$ROOT/train.py" \
   --root "$DATA" --seed "$SEED" --trainer "$TRAINER" \
   --dataset-config-file "$DATASET_CONFIG" --config-file "$CONFIG" \
   --output-dir "$DIR" --mode train \

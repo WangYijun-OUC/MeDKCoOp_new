@@ -11,6 +11,8 @@ GPU="${GPU:-0}"
 SHOTS="${SHOTS:-16}"
 EPOCH="${EPOCH:-100}"
 TRAINER="${TRAINER:-GRAPH_DCPL_NO_TXT_VIS_GRAPH}"
+PYTHON_BIN="${PYTHON_BIN:-/data/wangyijun/conda/medkcoop/bin/python}"
+[[ -x "$PYTHON_BIN" ]] || PYTHON_BIN=python
 MODEL_DIR="${MODEL_DIR:-$CKPT/cross_data/source/$SOURCE/shots_${SHOTS}/$TRAINER/seed${SEED}}"
 CONFIG="$ROOT/configs/trainers/medkcoop/few_shot/${TARGET}.yaml"
 DATASET_CONFIG="$ROOT/configs/datasets/${TARGET}.yaml"
@@ -22,7 +24,7 @@ if [[ -s "$DIR/log.txt" ]] && grep -q '\* accuracy:' "$DIR/log.txt"; then
 fi
 export CUDA_VISIBLE_DEVICES="$GPU"
 mkdir -p "$DIR"
-python "$ROOT/train.py" --root "$DATA" --seed "$SEED" --trainer "$TRAINER" \
+"$PYTHON_BIN" "$ROOT/train.py" --root "$DATA" --seed "$SEED" --trainer "$TRAINER" \
   --dataset-config-file "$DATASET_CONFIG" --config-file "$CONFIG" \
   --output-dir "$DIR" --model-dir "$MODEL_DIR" --load-epoch "$EPOCH" \
   --mode test --eval-only \

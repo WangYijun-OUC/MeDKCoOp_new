@@ -1,50 +1,80 @@
-# scripts
+# 实验脚本
 
-启动脚本按方法分组。每个方法保留独立入口；公共逻辑可以复用，但复现者从对应方法目录启动。
+每个方法目录都包含完整的独立运行脚本，脚本内直接调用 `train.py`，不依赖统一执行器。
+额外的 `scripts/run_all_methods.sh` 只用于维护者批量调度。
 
-```
-scripts/
-├── medkcoop/          # 论文方法：11 个
-│   ├── base2new.sh            # 16-shot 训练 base → eval-only 评测 new
-│   ├── base2new_abla.sh       # 消融批量跑（Table 4/5）
-│   ├── base2new_fuse.sh       # 融合相关消融
-│   ├── base2new_clip.sh       # backbone 消融（CLIP）
-│   ├── cross_data_eval.sh     # 跨数据集批量评测入口
-│   ├── xd_train.sh / xd_test.sh  # 源域 BTMRI1 训练 / 目标域评测
-│   ├── domain_genera.sh       # 用 *v2 数据集做 domain generalization
-│   └── few_shot.sh / few_shot1.sh / few_shot2.sh
-└── baselines/         # 8 个 baseline 的同类脚本
-    ├── biomedcoop/ coop/ cocoop/ kgcoop/ MaPLe/ dcpl/
-    ├── graph_adapter/ zeroshot/
-```
+## 方法目录
 
-## MeDKCoOp 当前入口
+- 本文方法：`scripts/medkcoop/`
+- Baseline：`scripts/baselines/{biomedcoop,coop,cocoop,kgcoop,MaPLe,dcpl,graph_adapter,zeroshot}/`
 
-从仓库根目录运行。`DATA`、`CKPT`、`GPU` 可用环境变量覆盖；默认分别指向本机数据目录、
-`/data/wangyijun/ckpt/MeDKCoOp` 和 GPU 0。
+每个可训练 baseline 目录提供：
 
-```bash
-bash scripts/medkcoop/base2new.sh BTMRI1 1
-bash scripts/medkcoop/few_shot.sh BTMRI1 1 16
-bash scripts/medkcoop/xd_train.sh BTMRI1 1
-bash scripts/medkcoop/xd_test.sh CHMNIST 1 BTMRI1
-bash scripts/medkcoop/cross_data_eval.sh
-bash scripts/medkcoop/domain_genera.sh
-```
+- `base2new.sh DATASET SEED`
+- `few_shot.sh DATASET SEED SHOTS`
+- `cross_data_eval.sh`：BTMRI1 训练，其他 7 个数据集评测，3 seeds
+- `domain_genera.sh`：BTMRI1 训练，7 个 v2 目标数据集评测，3 seeds
+- `xd_train.sh SOURCE SEED` 与 `xd_test.sh TARGET SEED SOURCE`：单次运行和排错
 
-跨数据集和领域泛化入口已接通，但尚未完成论文 Table 2/3 的三种子数值验证。
-`MODEL_DIR` 可覆盖目标评测时的来源 checkpoint 路径。
-当前 `*v2` 数据集类把同一份 split 同时交给 `train_x` 与 `test`，而 MeDKCoOp
-会用 `train_x` 的标签构建视觉图。因此领域泛化结果必须连同这一数据使用方式披露，
-不能直接解释为完全不使用目标域标签的评测。
+例如：
 
-## 尚待整理的旧脚本
+~~~bash
+GPU=0 bash scripts/baselines/coop/base2new.sh BTMRI1 1
+GPU=0 bash scripts/baselines/biomedcoop/few_shot.sh CHMNIST 2 4
+GPU=0 bash scripts/baselines/MaPLe/xd_train.sh BTMRI1 1
+GPU=0 bash scripts/baselines/MaPLe/xd_test.sh CHMNIST 1 BTMRI1
+~~~
 
-1. 脚本内部仍调用 `bash scripts/graph_dcpl/xd_test.sh ...`，目录已改名为 `scripts/medkcoop/`。
-2. `--config-file` 多写 `configs/trainers/GRAPH_DCPL/...`，该目录不存在；实际用
-   `configs/trainers/medkcoop/{base_to_novel,few_shot}/<DATASET>.yaml`。
-3. 输出目录写死 `/home/wangyijun/ckpt/...` 或 `/data/wangyijun/ckpt/...`，GPU 写死 `Device_id=5..9`。
-4. `CFG=vit_b16_0002_b50_randflip` 只是目录名，不是配置路径。
-5. few-shot 脚本传 `TRAINER.BIOMEDCOOP.*`，但 GRAPHDCPL trainer 读 `TRAINER.GRAPHDCPL.*`，覆盖无效。
-6. 已删除的 baseline 目录（clip_adapter/dplq/linear_probe*/prograd/tip_adapter）对应代码也已移除，
-   需要时从 git 基线提交 `5e7ecc2` 或备份恢复。
+MeDKCoOp 对应入口：
+
+~~~bash
+GPU=0 bash scripts/medkcoop/base2new.sh BTMRI1 1
+GPU=0 bash scripts/medkcoop/few_shot.sh BTMRI1 1 16
+GPU=0 bash scripts/medkcoop/cross_data_eval.sh
+GPU=0 bash scripts/medkcoop/domain_genera.sh
+~~~
+
+## 默认方法实现
+
+| 目录 | Trainer | base2new epoch | few-shot / transfer epoch |
+|---|---|---:|---:|
+| biomedcoop | BiomedCoOp_BiomedCLIP | 50 | 100 |
+| coop | CoOp_BiomedCLIP | 50 | 100 |
+| cocoop | CoCoOp_BiomedCLIP | 50 | 100 |
+| kgcoop | KgCoOp_BiomedCLIP | 50 | 100 |
+| MaPLe | MaPLe_CLIP | 5 | 100 |
+| dcpl | DCPL_biomedclip | 50 | 100 |
+| graph_adapter | GraphCLIP | 50 | 100 |
+| zeroshot | ZeroshotBiomedCLIP | 无训练 | 无训练 |
+
+MaPLe 的 base2new 默认 5 epoch 来自现存实验配置；transfer 配置为 100 epoch。
+`EPOCH` 可覆盖默认值。通用变量包括 `DATA`、`CKPT`、`GPU`、`SHOTS`、
+`EVAL_BS`、`PYTHON_BIN`、`SOURCE` 和 `MODEL_DIR`。
+
+默认优先使用 `/data/wangyijun/conda/medkcoop/bin/python`，不存在时使用当前环境的
+`python`。输出默认写到 `/data/wangyijun/ckpt/MeDKCoOp/<method>/...`。
+脚本只有在 checkpoint 与所需指标日志同时存在时才跳过；残缺产物会触发错误并停止。
+
+## 统一调度
+
+统一脚本调用各方法自己的公开入口：
+
+~~~bash
+GPU=0 bash scripts/run_all_methods.sh base2new BTMRI1 1
+GPU=0 bash scripts/run_all_methods.sh few_shot BTMRI1 1 16
+~~~
+
+完整 cross-data 和 domain-generalization 会依次运行大量实验，建议按方法使用对应目录的脚本，
+或自行分配不同的空闲 GPU。
+
+## 消融
+
+- `base2new_abla.sh`：Table 4 知识来源和文本干预消融
+- `base2new_fuse.sh`：Table 5 组件组合消融
+- `base2new_clip.sh`：Fig. 4 backbone 消融；PubMedCLIP/PMC-CLIP 需要额外本地权重
+
+## 领域泛化解释限制
+
+当前 `*v2` 数据集类把同一份 split 同时交给 `train_x` 和 `test`。MeDKCoOp 会用
+`train_x` 构建视觉知识图，因此 Table 3 的实验语义仍需结合论文原设置核实，不能直接表述为
+完全不使用目标域标签。脚本已可运行，这一限制不等于数值已完成复现。

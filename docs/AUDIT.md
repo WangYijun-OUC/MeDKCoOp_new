@@ -5,6 +5,9 @@
 > MeDKCoOp cross-data / domain 脚本及跨类别原型加载。以下是原始审查快照，
 > 其中 A1、A2、B6 和部分 B1 的“当前状态”已发生变化。Table 2/3 尚未重新训练验证。
 > 另须核查 `*v2` 数据集把同一 split 同时用于 `train_x` 与 `test` 的实验含义。
+> 后续脚本整改为每个方法各自包含完整的 base2new、few-shot、cross-data 和 DG 命令；
+> 不再依赖统一执行器。统一批量脚本只负责调用这些公开入口。CoOp 的独立 few-shot 脚本已用
+> BTMRI1、1-shot、1 epoch 实际运行通过；旧硬编码 GPU/输出路径脚本已移除。
 
 > 审查范围：`/home/wangyijun/MeDKCoOp`（当前 HEAD `6912767` 之后的工作区）
 > 审查方式：静态检查 + 实际运行验证（base2new 48 个 run 已完成）

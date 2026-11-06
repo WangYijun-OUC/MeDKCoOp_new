@@ -1,41 +1,32 @@
-#!/bin/bash
-
-# custom config
-DATA="/data/wangyijun/dataset"
-DATASET=$2
-SHOTS=$3  # number of shots (1, 2, 4, 8, 16)
-MODEL=BiomedCLIP
-NCTX=4
-CSC=False
-CTP=end
-CFG=vit_b16
-
-METHOD=CoOp
-TRAINER=CoOp_${MODEL}
-Device_id=6
-
-for SHOTS in 2
-do
-for SEED in 1 2 3
-do
-for DATASET in CHMNIST covid ctkidney kvasir lungcolon octmnist retina BTMRI1
-do
-        DIR=/data/wangyijun/ckpt/coop/few_shot/${DATASET}/shots_${SHOTS}/${TRAINER}/nctx${NCTX}_csc${CSC}_ctp${CTP}/seed${SEED}
-        if [ -d "$DIR" ]; then
-            echo "Oops! The results exist at ${DIR} (so skip this job)"
-        else
-            CUDA_VISIBLE_DEVICES=${Device_id} python train.py \
-            --root ${DATA} \
-            --seed ${SEED} \
-            --trainer ${TRAINER} \
-            --dataset-config-file configs/datasets/${DATASET}.yaml \
-            --config-file configs/trainers/${METHOD}/${CFG}.yaml \
-            --output-dir ${DIR} \
-            TRAINER.COOP.N_CTX ${NCTX} \
-            TRAINER.COOP.CSC ${CSC} \
-            TRAINER.COOP.CLASS_TOKEN_POSITION ${CTP} \
-            DATASET.NUM_SHOTS ${SHOTS}
-        fi
-done
-done
-done
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+DATA="${DATA:-/data/wangyijun/dataset}"
+CKPT="${CKPT:-/data/wangyijun/ckpt/MeDKCoOp}"
+GPU="${GPU:-0}"
+PYTHON_BIN="${PYTHON_BIN:-/data/wangyijun/conda/medkcoop/bin/python}"
+[[ -x "$PYTHON_BIN" ]] || PYTHON_BIN=python
+TRAINER="${TRAINER:-CoOp_BiomedCLIP}"
+export CUDA_VISIBLE_DEVICES="$GPU"
+has_accuracy() { [[ -s "$1" ]] && grep -q '\\* accuracy:' "$1"; }
+checkpoint() { find "$1" -mindepth 2 -maxdepth 3 -type f -name "model.pth.tar-$2" -print -quit 2>/dev/null; }
+# Usage: few_shot.sh [DATASET=BTMRI1] [SEED=1] [SHOTS=16]
+DATASET="${1:-BTMRI1}"
+SEED="${2:-1}"
+SHOTS="${3:-16}"
+EPOCH="${EPOCH:-100}"
+EVAL_BS="${EVAL_BS:-16}"
+CONFIG="$ROOT/configs/trainers/CoOp/vit_b16.yaml"
+DATASET_CONFIG="$ROOT/configs/datasets/${DATASET}.yaml"
+DIR="$CKPT/coop/few_shot/$DATASET/shots_${SHOTS}/$TRAINER/seed${SEED}"
+[[ -f "$CONFIG" && -f "$DATASET_CONFIG" ]] || { echo "缺少配置: $DATASET" >&2; exit 2; }
+if [[ -n "$(checkpoint "$DIR" "$EPOCH")" ]]; then
+  if has_accuracy "$DIR/log.txt"; then echo "[skip] $DIR"; exit 0; fi
+  echo "checkpoint 存在但指标缺失: $DIR" >&2; exit 1
+fi
+mkdir -p "$DIR"
+"$PYTHON_BIN" "$ROOT/train.py" --root "$DATA" --seed "$SEED" --trainer "$TRAINER" \
+  --dataset-config-file "$DATASET_CONFIG" --config-file "$CONFIG" --output-dir "$DIR" --mode train \
+  DATASET.NUM_SHOTS "$SHOTS" DATASET.SUBSAMPLE_CLASSES all DATALOADER.TEST.BATCH_SIZE "$EVAL_BS" OPTIM.MAX_EPOCH "$EPOCH"
+has_accuracy "$DIR/log.txt" || { echo "指标缺失: $DIR" >&2; exit 1; }
+[[ -n "$(checkpoint "$DIR" "$EPOCH")" ]] || { echo "checkpoint 缺失: $DIR" >&2; exit 1; }
