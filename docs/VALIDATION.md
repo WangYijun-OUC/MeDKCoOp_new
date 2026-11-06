@@ -42,7 +42,7 @@ trainer 旧注册名和跨类别 checkpoint 加载均可工作。23.20% 只是�
 - 每个可训练方法目录都包含独立的 `base2new.sh`、`few_shot.sh`、`xd_train.sh`、
   `xd_test.sh`、`cross_data_eval.sh` 和 `domain_genera.sh`。
 - Zeroshot 不训练 source checkpoint，因此提供四类任务入口和独立 `xd_test.sh`，不伪造
-  `xd_train.sh`。
+  `xd_train.sh`。  
 - 各方法的 base2new、few-shot、`xd_train`、`xd_test` 直接调用 `train.py`，没有符号链接，
   也不 source 统一 runner；cross-data / DG 批量入口只调用同方法的 `xd_*`。
 - `scripts/run_all_methods.sh` 只逐个调用各方法的公开入口。

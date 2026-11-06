@@ -8,7 +8,7 @@ PYTHON_BIN="${PYTHON_BIN:-/data/wangyijun/conda/medkcoop/bin/python}"
 [[ -x "$PYTHON_BIN" ]] || PYTHON_BIN=python
 TRAINER="${TRAINER:-MaPLe_CLIP}"
 export CUDA_VISIBLE_DEVICES="$GPU"
-has_accuracy() { [[ -s "$1" ]] && grep -q '\\* accuracy:' "$1"; }
+has_accuracy() { [[ -s "$1" ]] && grep -q '\* accuracy:' "$1"; }
 checkpoint() { find "$1" -mindepth 2 -maxdepth 3 -type f -name "model.pth.tar-$2" -print -quit 2>/dev/null; }
 # Usage: few_shot.sh [DATASET=BTMRI1] [SEED=1] [SHOTS=16]
 DATASET="${1:-BTMRI1}"

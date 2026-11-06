@@ -9,7 +9,7 @@ PYTHON_BIN="${PYTHON_BIN:-/data/wangyijun/conda/medkcoop/bin/python}"
 [[ -x "$PYTHON_BIN" ]] || PYTHON_BIN=python
 TRAINER="${TRAINER:-ZeroshotBiomedCLIP}"
 export CUDA_VISIBLE_DEVICES="$GPU"
-has_accuracy() { [[ -s "$1" ]] && grep -q '\\* accuracy:' "$1"; }
+has_accuracy() { [[ -s "$1" ]] && grep -q '\* accuracy:' "$1"; }
 run_eval() {
   local dataset="$1" config="$2" output="$3" subset="$4" seed="$5"
   local ds_config="$ROOT/configs/datasets/${dataset}.yaml"

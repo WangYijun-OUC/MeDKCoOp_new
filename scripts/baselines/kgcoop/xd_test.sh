@@ -8,7 +8,7 @@ PYTHON_BIN="${PYTHON_BIN:-/data/wangyijun/conda/medkcoop/bin/python}"
 [[ -x "$PYTHON_BIN" ]] || PYTHON_BIN=python
 TRAINER="${TRAINER:-KgCoOp_BiomedCLIP}"
 export CUDA_VISIBLE_DEVICES="$GPU"
-has_accuracy() { [[ -s "$1" ]] && grep -q '\\* accuracy:' "$1"; }
+has_accuracy() { [[ -s "$1" ]] && grep -q '\* accuracy:' "$1"; }
 checkpoint() { find "$1" -mindepth 2 -maxdepth 3 -type f -name "model.pth.tar-$2" -print -quit 2>/dev/null; }
 # Usage: xd_test.sh TARGET SEED [SOURCE=BTMRI1]
 DATASET="${1:?需指定目标数据集}"

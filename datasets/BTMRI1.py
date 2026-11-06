@@ -31,7 +31,12 @@ class BTMRI1(DatasetBase):
         # print(self.image_dir)   # /data/wangyijun/dataset/BTMRI + brain-tumor-mri-dataset
         # sys.exit()
         self.split_path = os.path.join(self.dataset_dir, "split_BTMRI1.json")
-        self.split_fewshot_dir = os.path.join(self.dataset_dir, "split_fewshot")
+        cache_root = os.environ.get("FEWSHOT_CACHE")
+        self.split_fewshot_dir = (
+            os.path.join(cache_root, cfg.DATASET.NAME)
+            if cache_root
+            else os.path.join(self.dataset_dir, "split_fewshot")
+        )
         mkdir_if_missing(self.split_fewshot_dir)
 
         if os.path.exists(self.split_path):
