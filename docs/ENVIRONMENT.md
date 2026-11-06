@@ -37,10 +37,14 @@ pip install -e third_party/Dassl.pytorch
 | PMC-CLIP | `/data/wangyijun/model/PubMed/` | `PMCCLIP_DIR` |
 | PMC-CLIP 文本骨干 | `/data/wangyijun/model/BiomedCLIP/BiomedBERT` | `PMCCLIP_BERT_DIR` |
 | 输出（日志/模型） | `/data/wangyijun/ckpt/MeDKCoOp` | `CKPT` |
+| few-shot 采样缓存 | 默认写在各数据集的 `split_fewshot/` | `FEWSHOT_CACHE`（除 BTMRI1） |
 
 `bootstrap.py` 会把 `hf-hub:microsoft/BiomedCLIP-...` 的加载重定向到本地权重，
 因此无需联网；可用 `HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1` 强制离线验证。
 PubMedCLIP 与 PMC-CLIP trainer 同样默认读取上表的本地路径，不再依赖仓库相对路径。
+对其余七个数据集，如需保持数据目录只读，可设置例如
+`FEWSHOT_CACHE=/data/wangyijun/ckpt/fewshot_cache`；缓存会再按数据集名分目录，避免不同
+数据集的 shot/seed 文件互相覆盖。BTMRI1 为保持现有 CRLF 源文件和历史缓存路径暂未迁移。
 
 需要更强的重复性时设置 `DETERMINISTIC=1`，或直接给 `train.py` 传
 `--deterministic`。这会关闭 cuDNN benchmark 并启用 deterministic 模式；论文原始结果仍以

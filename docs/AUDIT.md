@@ -12,6 +12,12 @@
 > PubMedCLIP/PMC-CLIP 本地权重路径和 DASSL 调试断点也已修复。原 B9 中“权重缺失”的判断
 > 不正确：权重实际位于 `/data/wangyijun/model/PubMedCLIP` 与 `/data/wangyijun/model/PubMed`。
 
+> 复核最终 trainer 时新增一个需要与论文结果分开处理的问题：`build_model()` 将
+> `self.model.visual_net` 标记为可训练，但优化器只接收 `prompt_learner.parameters()`，因此该网络
+> 实际不会更新；`build_image_graph()` 还会另建一个随机初始化且不保存的局部 `visual_net`。
+> 直接“修复”会改变论文模型与既有 checkpoint 的训练语义，本轮保留原行为并明确记录，后续应
+> 作为 corrected implementation 单独做对照实验。
+
 > 审查范围：`/home/wangyijun/MeDKCoOp`（当前 HEAD `6912767` 之后的工作区）
 > 审查方式：静态检查 + 实际运行验证（base2new 48 个 run 已完成）
 > 本文只做诊断与建议，除清理缓存外未修改代码。

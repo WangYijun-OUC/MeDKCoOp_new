@@ -18,7 +18,12 @@ class LungColon(DatasetBase):
         self.dataset_dir = os.path.join(root, self.dataset_dir)
         self.image_dir = os.path.join(self.dataset_dir, "LungColon")
         self.split_path = os.path.join(self.dataset_dir, "split_LungColon.json")
-        self.split_fewshot_dir = os.path.join(self.dataset_dir, "split_fewshot")
+        cache_root = os.environ.get("FEWSHOT_CACHE")
+        self.split_fewshot_dir = (
+            os.path.join(cache_root, cfg.DATASET.NAME)
+            if cache_root
+            else os.path.join(self.dataset_dir, "split_fewshot")
+        )
         mkdir_if_missing(self.split_fewshot_dir)
 
         if os.path.exists(self.split_path):

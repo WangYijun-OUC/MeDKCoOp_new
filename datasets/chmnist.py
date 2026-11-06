@@ -18,7 +18,12 @@ class CHMNIST(DatasetBase):
         self.dataset_dir = os.path.join(root, self.dataset_dir)
         self.image_dir = os.path.join(self.dataset_dir, "kather_texture_2016_image_tiles_5000/Kather_texture_2016_image_tiles_5000")
         self.split_path = os.path.join(self.dataset_dir, "split_CHMNIST.json")
-        self.split_fewshot_dir = os.path.join(self.dataset_dir, "split_fewshot")
+        cache_root = os.environ.get("FEWSHOT_CACHE")
+        self.split_fewshot_dir = (
+            os.path.join(cache_root, cfg.DATASET.NAME)
+            if cache_root
+            else os.path.join(self.dataset_dir, "split_fewshot")
+        )
         mkdir_if_missing(self.split_fewshot_dir)
 
         if os.path.exists(self.split_path):
