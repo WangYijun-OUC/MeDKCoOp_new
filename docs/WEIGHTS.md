@@ -32,7 +32,7 @@
 | `/data/wangyijun/ckpt/MeDKCoOp` | 1.1 GB | 本次整理后重训验证的 BTMRI1 seed1 |
 
 ### BiomedCLIP 内部可顺手去重（约 1.9 GB）
-
+  
 | 子项 | 大小 | 说明 |
 |---|---|---|
 | `BiomedCLIP/models--microsoft--BiomedCLIP-PubMedBERT_256-vit_base_patch16_224/` | 748 MB | HF cache 形式的重复权重；`bootstrap.py` 只读根目录的 `open_clip_pytorch_model.bin` |
@@ -56,7 +56,7 @@
 | `/data/wangyijun/model/BLIP/` | 2.0 GB | BLIP trainer 已从仓库移除，论文未用 |
 | BiomedCLIP 内部重复（见 2.1） | 1.9 GB | 去重 |
 
-合计约 **1.39 TB**。
+合计约 **1.39 TB**。  
 
 > 如果以后还想对某个变体做 eval-only，可以只保留每个变体 seed1 的模型（约 1.1 GB/数据集），
 > 这样大约多留 30–40 GB，但不再需要 784 GB。

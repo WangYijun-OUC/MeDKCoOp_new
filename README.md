@@ -75,7 +75,7 @@ cd /home/wangyijun/MeDKCoOp
 GPU=0 bash scripts/medkcoop/base2new.sh BTMRI1 1
 ```
 
-完整环境、权重、单步命令与论文对照见 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)；8 数据集 base2new 复现结果见 [docs/RESULTS.md](docs/RESULTS.md)；`/data` 权重清理建议见 [docs/WEIGHTS.md](docs/WEIGHTS.md)。
+完整环境、权重、单步命令与论文对照见 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)；8 数据集 base2new 复现结果见 [docs/RESULTS.md](docs/RESULTS.md)，结构与代码审查见 [docs/AUDIT.md](docs/AUDIT.md)；`/data` 权重清理建议见 [docs/WEIGHTS.md](docs/WEIGHTS.md)。
 
 ## 当前状态
 
