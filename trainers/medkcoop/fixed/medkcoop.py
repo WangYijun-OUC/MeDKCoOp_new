@@ -26,6 +26,67 @@ MEDSAM_CKPT_PATH = os.environ.get(
     "MEDSAM_CKPT", "/data/wangyijun/model/medsam/sam_vit_b_01ec64.pth"
 )
 
+# ---- MedSAM 特征缓存（对应 AUDIT B14）----
+# 评测阶段 transform 是确定性的（resize+center crop），同一图多次评测得到相同张量，
+# 因此可以按张量内容哈希缓存 MedSAM 编码结果，避免每个 seed 重复跑 1024x1024 前向。
+# 开关：MEDSAM_CACHE=1（默认关闭，保持原有行为）。缓存目录：MEDSAM_CACHE_DIR。
+import hashlib
+import pickle
+
+_MEDSAM_CACHE = {}
+_MEDSAM_CACHE_ENABLED = os.environ.get("MEDSAM_CACHE", "0") == "1"
+_MEDSAM_CACHE_DIR = os.environ.get(
+    "MEDSAM_CACHE_DIR", "/data/wangyijun/ckpt/medsam_cache"
+)
+
+
+def _medsam_cache_key(tensor):
+    arr = tensor.detach().to("cpu", torch.float32).contiguous().numpy()
+    return hashlib.sha1(arr.tobytes()).hexdigest()
+
+
+def _medsam_cache_get(key):
+    if key in _MEDSAM_CACHE:
+        return _MEDSAM_CACHE[key]
+    path = os.path.join(_MEDSAM_CACHE_DIR, key[:2], key + ".pt")
+    if os.path.exists(path):
+        val = torch.load(path, map_location="cpu")
+        _MEDSAM_CACHE[key] = val
+        return val
+    return None
+
+
+def _medsam_cache_put(key, value):
+    _MEDSAM_CACHE[key] = value
+    try:
+        os.makedirs(os.path.join(_MEDSAM_CACHE_DIR, key[:2]), exist_ok=True)
+        torch.save(value, os.path.join(_MEDSAM_CACHE_DIR, key[:2], key + ".pt"))
+    except Exception as exc:  # 缓存失败不影响主流程
+        print("[medsam-cache] write failed:", exc)
+
+
+def medsam_encode(medical_model, image, chunk=4, cache=None):
+    """分块过 MedSAM 编码器；cache=True 时按张量哈希读写缓存。"""
+    if not _MEDSAM_CACHE_ENABLED:
+        cache = False
+    if cache:
+        keys = [_medsam_cache_key(x) for x in image]
+        cached = [_medsam_cache_get(k) for k in keys]
+        if all(c is not None for c in cached):
+            return torch.stack(cached).to(image.device)
+        out = []
+        for i, k in enumerate(keys):
+            feats = medsam_encode(medical_model, image[i:i + 1], chunk=chunk, cache=False)
+            _medsam_cache_put(k, feats[0].detach().to("cpu"))
+            out.append(feats)
+        return torch.cat(out, dim=0)
+    _med_in = nn.functional.interpolate(image, (1024, 1024))
+    return torch.cat(
+        [medical_model.image_encoder(chunk_) for chunk_ in torch.split(_med_in, chunk, dim=0)],
+        dim=0,
+    )
+
+
 class TextEncoder(nn.Module):
     def __init__(self, biomedclip_model):
         super().__init__()
@@ -149,7 +210,7 @@ def build_image_graph(cfg, classnames, biomedclip_model, img_encoder, train_load
             label = batch["label"]
             label = label.cuda()
  
-            medical_feature = medical_model.image_encoder(nn.functional.interpolate(image, (1024, 1024))).cpu()
+            medical_feature = medsam_encode(medical_model, image, cache=False).cpu()
             mb,mc,mh,mw = medical_feature.shape
             medical_feature = medical_feature.view(mb,mc,mh*mw)
             remote_mae_feature = medical_feature.mean(dim=-1).type(dtype)
@@ -554,10 +615,9 @@ class CustomCLIP(nn.Module):
         
         with torch.no_grad():
             # MedSAM 的 1024x1024 注意力很吃显存：分块前向，数值与整批一致
-            _med_in = nn.functional.interpolate(image, (1024, 1024))
-            medical_feature = torch.cat(
-                [self.medical_model.image_encoder(chunk) for chunk in torch.split(_med_in, 4, dim=0)],
-                dim=0,
+            medical_feature = medsam_encode(
+                self.medical_model, image,
+                cache=not self.training and not torch.is_grad_enabled(),
             )
             mb,mc,mh,mw = medical_feature.shape
             medical_feature = medical_feature.view(mb,mc,mh*mw)
