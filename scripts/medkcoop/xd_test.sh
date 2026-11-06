@@ -33,4 +33,8 @@ mkdir -p "$DIR"
   --mode test --eval-only \
   DATASET.NUM_SHOTS "$SHOTS" DATASET.SUBSAMPLE_CLASSES all \
   TRAINER.GRAPHDCPL.TRANSFER_EVAL True $EXTRA_OPTS
-grep -q '\* accuracy:' "$DIR/log.txt" || { echo "目标评测缺少指标: $DIR" >&2; exit 1; }
+if ! grep -q '\* accuracy:' "$DIR/log.txt" 2>/dev/null; then
+  echo "目标评测缺少指标: $DIR" >&2
+  rm -f "$DIR/log.txt"
+  exit 1
+fi

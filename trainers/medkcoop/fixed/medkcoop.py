@@ -65,7 +65,9 @@ def _medsam_cache_put(key, value):
         print("[medsam-cache] write failed:", exc)
 
 
-def medsam_encode(medical_model, image, chunk=4, cache=None):
+def medsam_encode(medical_model, image, chunk=None, cache=None):
+    if chunk is None:
+        chunk = int(os.environ.get("MEDSAM_CHUNK", "2"))
     """分块过 MedSAM 编码器；cache=True 时按张量哈希读写缓存。"""
     if not _MEDSAM_CACHE_ENABLED:
         cache = False
