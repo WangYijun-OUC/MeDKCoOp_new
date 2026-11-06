@@ -30,7 +30,8 @@ MeDKCoOp/
 │   ├── open_clip/                 # BiomedCLIP 加载
 │   ├── clip/                      # CLIP + pmcclip（已合并 clip1 的 MaPLe/IVLP 分支）
 │   └── MedSAM/                    # 视觉知识分支
-├── tools/parse_test_res.py        # 日志 → 均值/方差
+├── tools/collect_results.py       # 各任务日志 → seed 均值/方差/CSV
+├── tools/parse_test_res.py        # 兼容旧目录的日志汇总工具
 └── docs/                          # 环境与运行 / 复现方案 / 结构映射 / 权重清理清单
 ```
 

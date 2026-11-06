@@ -27,7 +27,10 @@ from clip.pmcclip import ModifiedResNet
 from transformers import AutoTokenizer, AutoModel
 
 # Directory where the files should be located
-directory = "clip/checkpoints"
+directory = os.environ.get("PMCCLIP_DIR", "/data/wangyijun/model/PubMed")
+BERT_DIR = os.environ.get(
+    "PMCCLIP_BERT_DIR", "/data/wangyijun/model/BiomedCLIP/BiomedBERT"
+)
 
 # File URLs
 files = {
@@ -78,7 +81,7 @@ class PromptLearner(nn.Module):
         ctx_dim = 768
         clip_imsize = 224
         cfg_imsize = cfg.INPUT.SIZE[0]
-        self.tokenizer = AutoTokenizer.from_pretrained('microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract')
+        self.tokenizer = AutoTokenizer.from_pretrained(BERT_DIR, local_files_only=True)
         self.class_token_position = cfg.TRAINER.KGCOOP.CLASS_TOKEN_POSITION
         assert cfg_imsize == clip_imsize, f"cfg_imsize ({cfg_imsize}) must equal to clip_imsize ({clip_imsize})"
 
@@ -201,7 +204,7 @@ class PMCCLIP(nn.Module):
         self.text_encoder = text_encoder
         self.text_projection_layer = projection_layer
         self.logit_scale = 4.4292
-        self.tokenizer = AutoTokenizer.from_pretrained('microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract')
+        self.tokenizer = AutoTokenizer.from_pretrained(BERT_DIR, local_files_only=True)
     def forward(self,image,text):
         encoded_input = self.tokenizer(text, padding='max_length', truncation=True, max_length=77, return_tensors='pt')
         input_ids = encoded_input['input_ids']
@@ -269,6 +272,7 @@ class KgCoOp_PMCCLIP(TrainerX):
         for filename, url in files.items():
             filepath = os.path.join(directory, filename)
             if not os.path.exists(filepath):
+                os.makedirs(directory, exist_ok=True)
                 print(f"{filename} not found in {directory}. Downloading...")
                 download_file(url, filepath)
             else:
@@ -276,15 +280,15 @@ class KgCoOp_PMCCLIP(TrainerX):
 
         print(f"Loading PMC-CLIP (backbone: RN50)")
         image_encoder = ModifiedResNet(layers=[3,4,6,3], output_dim=768, heads=8, image_size=224, width=64)
-        image_encoder.load_state_dict(torch.load(os.path.join(directory,'image_encoder(resnet50).pth'), weights_only=True))
+        image_encoder.load_state_dict(torch.load(os.path.join(directory,'image_encoder(resnet50).pth'), map_location="cpu"))
 
         # Load Text Encoder
-        text_encoder = AutoModel.from_pretrained('microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract')
-        text_encoder.load_state_dict(torch.load(os.path.join(directory,'text_encoder.pth'), weights_only=True))
+        text_encoder = AutoModel.from_pretrained(BERT_DIR, local_files_only=True)
+        text_encoder.load_state_dict(torch.load(os.path.join(directory,'text_encoder.pth'), map_location="cpu"))
 
         # Load Text Proj Layer
 
-        text_projection_layer = torch.load(os.path.join(directory,'text_projection_layer.pth'), weights_only=True)
+        text_projection_layer = torch.load(os.path.join(directory,'text_projection_layer.pth'), map_location="cpu")
         text_projection_layer = nn.Parameter(text_projection_layer)
 
         # Device

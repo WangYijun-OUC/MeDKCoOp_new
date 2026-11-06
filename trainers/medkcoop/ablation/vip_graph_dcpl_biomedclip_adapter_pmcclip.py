@@ -1,7 +1,6 @@
 import os.path as osp
 import os
 import sys
-import pdb
 import json
 import math
 import copy
@@ -31,7 +30,10 @@ from clip.pmcclip import ModifiedResNet
 from transformers import AutoTokenizer, AutoModel
 
 # Directory where the files should be located
-directory = "/data/wangyijun/model/PubMed"
+directory = os.environ.get("PMCCLIP_DIR", "/data/wangyijun/model/PubMed")
+BERT_DIR = os.environ.get(
+    "PMCCLIP_BERT_DIR", "/data/wangyijun/model/BiomedCLIP/BiomedBERT"
+)
 
 # File URLs
 files = {
@@ -163,7 +165,7 @@ def _get_base_text_features(cfg, classnames, pmcclip_model, text_encoder):
     # TEMPLATES = CUSTOM_TEMPLATES[dataset]
 
     classnames = [name.replace("_", " ") for name in classnames]
-    tokenizer = AutoTokenizer.from_pretrained('microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract')
+    tokenizer = AutoTokenizer.from_pretrained(BERT_DIR, local_files_only=True)
     # biomedclip_model_temp = biomedclip_model.float().eval().cuda() 
 
     with torch.no_grad():
@@ -433,7 +435,7 @@ class MultiModalPromptLearner(nn.Module):
         # clip_imsize = biomedclip_model.visual.input_resolution
         clip_imsize = 224
         
-        self.tokenizer = AutoTokenizer.from_pretrained('microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract')
+        self.tokenizer = AutoTokenizer.from_pretrained(BERT_DIR, local_files_only=True)
 
         cfg_imsize = cfg.INPUT.SIZE[0]
         assert cfg_imsize == clip_imsize, f"cfg_imsize ({cfg_imsize}) must equal to clip_imsize ({clip_imsize})"
@@ -767,7 +769,7 @@ class PMCCLIP(nn.Module):
         self.text_encoder = text_encoder
         self.text_projection_layer = projection_layer
         self.logit_scale = 4.4292
-        self.tokenizer = AutoTokenizer.from_pretrained('microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract')
+        self.tokenizer = AutoTokenizer.from_pretrained(BERT_DIR, local_files_only=True)
     def forward(self,image,text):
         encoded_input = self.tokenizer(text, padding='max_length', truncation=True, max_length=77, return_tensors='pt')
         input_ids = encoded_input['input_ids']
@@ -911,7 +913,7 @@ class GRAPH_DCPL_PMCCLIP(TrainerX):
         image_encoder = ModifiedResNet(layers=[3,4,6,3], output_dim=768, heads=8, image_size=224, width=64)
         image_encoder.load_state_dict(torch.load(os.path.join(directory,'image_encoder(resnet50).pth')))
 
-        text_encoder = AutoModel.from_pretrained('microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract')
+        text_encoder = AutoModel.from_pretrained(BERT_DIR, local_files_only=True)
         text_encoder.load_state_dict(torch.load(os.path.join(directory,'text_encoder.pth')))
 
         # Load Text Proj Layer

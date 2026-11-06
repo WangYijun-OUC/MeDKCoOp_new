@@ -76,15 +76,11 @@ def parse_function(*metrics, directory="", args=None, end_signal=None):
         subdir_path = osp.join(directory, subdir)
         files = listdir_nohidden(subdir_path, sort=True)
 
-        # # 打印当前子目录下的所有文件
-        # print(f"Files in {subdir}:")
-        # for file in files:
-        #     print(file)
-        for file in files:
-            if file.startswith("log.txt"):
-                # 构建完整的文件路径
-                fpath = osp.join(directory, subdir, file)
-        # fpath = osp.join(directory, subdir, "log.txt-*")
+        log_files = [file for file in files if file.startswith("log.txt")]
+        if not log_files:
+            continue
+        selected = "log.txt" if "log.txt" in log_files else sorted(log_files)[-1]
+        fpath = osp.join(subdir_path, selected)
         assert check_isfile(fpath)
         good_to_go = False
         output = OrderedDict()

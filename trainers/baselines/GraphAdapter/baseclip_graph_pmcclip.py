@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import pdb
 import os.path as osp
 import os
 
@@ -46,7 +45,10 @@ from transformers import AutoTokenizer, AutoModel
 # }
 
 # Directory where the files should be located
-directory = "/data/wangyijun/model/PubMed"
+directory = os.environ.get("PMCCLIP_DIR", "/data/wangyijun/model/PubMed")
+BERT_DIR = os.environ.get(
+    "PMCCLIP_BERT_DIR", "/data/wangyijun/model/BiomedCLIP/BiomedBERT"
+)
 
 # File URLs
 files = {
@@ -258,7 +260,7 @@ def _get_base_text_features(cfg, classnames, pmcclip_model, text_encoder):
     else:
         TEMPLATES = []
     TEMPLATES += [CUSTOM_TEMPLATES[dataset]]
-    tokenizer = AutoTokenizer.from_pretrained('microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract')
+    tokenizer = AutoTokenizer.from_pretrained(BERT_DIR, local_files_only=True)
     with torch.no_grad():
         text_embeddings = []
         for text in classnames:
@@ -348,7 +350,7 @@ class PMCCLIP(nn.Module):
         self.text_encoder = text_encoder
         self.text_projection_layer = projection_layer
         self.logit_scale = 4.4292
-        self.tokenizer = AutoTokenizer.from_pretrained('microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract')
+        self.tokenizer = AutoTokenizer.from_pretrained(BERT_DIR, local_files_only=True)
     def forward(self,image,text):
         encoded_input = self.tokenizer(text, padding='max_length', truncation=True, max_length=77, return_tensors='pt')
         input_ids = encoded_input['input_ids']
@@ -418,7 +420,7 @@ class GraphCLIP_PMCCLIP(TrainerX):
         image_encoder.load_state_dict(torch.load(os.path.join(directory,'image_encoder(resnet50).pth')))
 
         # Load Text Encoder
-        text_encoder = AutoModel.from_pretrained('microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract')
+        text_encoder = AutoModel.from_pretrained(BERT_DIR, local_files_only=True)
         text_encoder.load_state_dict(torch.load(os.path.join(directory,'text_encoder.pth')))
 
         # Load Text Proj Layer

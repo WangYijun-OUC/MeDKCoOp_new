@@ -1,7 +1,6 @@
 import os.path as osp
 import os
 import sys
-import pdb
 import json
 import math
 import copy
@@ -29,7 +28,7 @@ from MedSAM.segment_anything import sam_model_registry
 
 _tokenizer = _Tokenizer()
 
-directory = "/data/wangyijun/model/PubMedCLIP"
+directory = os.environ.get("PUBMEDCLIP_DIR", "/data/wangyijun/model/PubMedCLIP")
 
 # File URLs
 files = {
@@ -63,7 +62,7 @@ def load_clip_to_cpu(cfg):
         state_dict = None
 
     except RuntimeError:
-        state_dict = torch.load(model_path, map_location="cpu", weights_only=True)
+        state_dict = torch.load(model_path, map_location="cpu")
 
     model = clip.build_model(state_dict or model.state_dict())
     checkpoint = torch.load(os.path.join(directory,"PubMedCLIP_ViT32.pth"))

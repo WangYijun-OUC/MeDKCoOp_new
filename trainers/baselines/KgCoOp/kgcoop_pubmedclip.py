@@ -28,7 +28,7 @@ from trainers.prompt_templates import CUSTOM_TEMPLATES
 _tokenizer = _Tokenizer()
 
 
-directory = "clip/checkpoints"
+directory = os.environ.get("PUBMEDCLIP_DIR", "/data/wangyijun/model/PubMedCLIP")
 
 # File URLs
 files = {
@@ -62,10 +62,10 @@ def load_clip_to_cpu(cfg):
         state_dict = None
 
     except RuntimeError:
-        state_dict = torch.load(model_path, map_location="cpu", weights_only=True)
+        state_dict = torch.load(model_path, map_location="cpu")
 
     model = clip.build_model(state_dict or model.state_dict())
-    checkpoint = torch.load(os.path.join(directory,"PubMedCLIP_ViT32.pth"), weights_only=True)
+    checkpoint = torch.load(os.path.join(directory,"PubMedCLIP_ViT32.pth"), map_location="cpu")
     model.load_state_dict(checkpoint['state_dict'])
 
     return model
@@ -268,6 +268,7 @@ class KgCoOp_PubMedCLIP(TrainerX):
         for filename, url in files.items():
             filepath = os.path.join(directory, filename)
             if not os.path.exists(filepath):
+                os.makedirs(directory, exist_ok=True)
                 print(f"{filename} not found in {directory}. Downloading...")
                 download_file(url, filepath)
             else:

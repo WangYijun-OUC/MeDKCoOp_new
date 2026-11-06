@@ -154,6 +154,7 @@ def extend_cfg(cfg):
     from yacs.config import CfgNode as CN
 
     cfg.DATASET.SUBSAMPLE_CLASSES = "all"  # all, base or new
+    cfg.MODEL.mode = "train"  # MeDKCoOp prototype branch: train or test
 
     cfg.TRAINER.COOP = CN()
     cfg.TRAINER.COOP.N_CTX = 4  # number of context vectors
@@ -278,8 +279,12 @@ def main(args):
         set_random_seed(cfg.SEED)
     setup_logger(cfg.OUTPUT_DIR)
 
+    deterministic = args.deterministic or os.environ.get("DETERMINISTIC", "0") == "1"
     if torch.cuda.is_available() and cfg.USE_CUDA:
-        torch.backends.cudnn.benchmark = True
+        torch.backends.cudnn.benchmark = not deterministic
+        torch.backends.cudnn.deterministic = deterministic
+    if deterministic:
+        print("Deterministic cuDNN mode enabled")
     # torch.cuda.set_device("cuda:8")
     print_args(args, cfg)
     print("Collecting env info ...")
@@ -341,12 +346,17 @@ if __name__ == "__main__":
         "--device-id", type=int, help="gpu id"
     )
     parser.add_argument(
-        "--mode", type=str, default="", help="train or test"
+        "--mode", type=str, choices=("train", "test"), default="", help="model branch"
     )
     parser.add_argument("--trainer", type=str, default="", help="name of trainer")
     parser.add_argument("--backbone", type=str, default="", help="name of CNN backbone")
     parser.add_argument("--head", type=str, default="", help="name of head")
     parser.add_argument("--eval-only", action="store_true", help="evaluation only")
+    parser.add_argument(
+        "--deterministic",
+        action="store_true",
+        help="disable cuDNN benchmark and select deterministic cuDNN kernels",
+    )
     parser.add_argument("--heatmap", type=str, default="", help="heatmap")
     parser.add_argument("--dataset", type=str, default="", help="dataset name")
     parser.add_argument(

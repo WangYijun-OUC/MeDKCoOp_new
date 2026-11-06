@@ -1,7 +1,6 @@
 import os.path as osp
 import os
 import sys
-import pdb
 from collections import OrderedDict
 import math
 import copy
@@ -22,7 +21,7 @@ from MedSAM.segment_anything import sam_model_registry
 _tokenizer = _Tokenizer()
 
 
-directory = "/data/wangyijun/model/PubMedCLIP"
+directory = os.environ.get("PUBMEDCLIP_DIR", "/data/wangyijun/model/PubMedCLIP")
 
 # File URLs
 files = {

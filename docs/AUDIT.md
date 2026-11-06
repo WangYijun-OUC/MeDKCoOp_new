@@ -8,6 +8,9 @@
 > 后续脚本整改为每个方法各自包含完整的 base2new、few-shot、cross-data 和 DG 命令；
 > 不再依赖统一执行器。统一批量脚本只负责调用这些公开入口。CoOp 的独立 few-shot 脚本已用
 > BTMRI1、1-shot、1 epoch 实际运行通过；旧硬编码 GPU/输出路径脚本已移除。
+> 环境依赖清单、deterministic 开关、通用结果汇总、PyTorch 1.12 的 `torch.load` 兼容、
+> PubMedCLIP/PMC-CLIP 本地权重路径和 DASSL 调试断点也已修复。原 B9 中“权重缺失”的判断
+> 不正确：权重实际位于 `/data/wangyijun/model/PubMedCLIP` 与 `/data/wangyijun/model/PubMed`。
 
 > 审查范围：`/home/wangyijun/MeDKCoOp`（当前 HEAD `6912767` 之后的工作区）
 > 审查方式：静态检查 + 实际运行验证（base2new 48 个 run 已完成）

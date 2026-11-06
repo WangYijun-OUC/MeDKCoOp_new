@@ -27,7 +27,10 @@ from clip.pmcclip import ModifiedResNet
 from transformers import AutoTokenizer, AutoModel
 
 # Directory where the files should be located
-directory = "/data/wangyijun/model/PubMed"
+directory = os.environ.get("PMCCLIP_DIR", "/data/wangyijun/model/PubMed")
+BERT_DIR = os.environ.get(
+    "PMCCLIP_BERT_DIR", "/data/wangyijun/model/BiomedCLIP/BiomedBERT"
+)
 
 # File URLs
 files = {
@@ -78,7 +81,7 @@ class PromptLearner(nn.Module):
         ctx_dim = 768
         clip_imsize = 224
         cfg_imsize = cfg.INPUT.SIZE[0]
-        self.tokenizer = AutoTokenizer.from_pretrained('microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract')
+        self.tokenizer = AutoTokenizer.from_pretrained(BERT_DIR, local_files_only=True)
         assert cfg_imsize == clip_imsize, f"cfg_imsize ({cfg_imsize}) must equal to clip_imsize ({clip_imsize})"
 
         if ctx_init:
@@ -170,7 +173,7 @@ class PMCCLIP(nn.Module):
         self.text_encoder = text_encoder
         self.text_projection_layer = projection_layer
         self.logit_scale = 4.4292
-        self.tokenizer = AutoTokenizer.from_pretrained('microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract')
+        self.tokenizer = AutoTokenizer.from_pretrained(BERT_DIR, local_files_only=True)
     def forward(self,image,text):
         encoded_input = self.tokenizer(text, padding='max_length', truncation=True, max_length=77, return_tensors='pt')
         input_ids = encoded_input['input_ids']
@@ -288,7 +291,7 @@ class BiomedCoOp_PMCCLIP(TrainerX):
         image_encoder.load_state_dict(torch.load(os.path.join(directory,'image_encoder(resnet50).pth')))
 
         # Load Text Encoder
-        text_encoder = AutoModel.from_pretrained('microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract')
+        text_encoder = AutoModel.from_pretrained(BERT_DIR, local_files_only=True)
         text_encoder.load_state_dict(torch.load(os.path.join(directory,'text_encoder.pth')))
 
         # Load Text Proj Layer

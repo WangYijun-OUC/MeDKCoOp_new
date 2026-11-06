@@ -25,7 +25,11 @@ from trainers.prompt_templates import CUSTOM_TEMPLATES, BIOMEDCOOP_TEMPLATES
 from transformers import AutoTokenizer, AutoModel
 
 # Directory where the files should be located
-directory = "clip/checkpoints"
+PUBMEDCLIP_DIR = os.environ.get("PUBMEDCLIP_DIR", "/data/wangyijun/model/PubMedCLIP")
+PMCCLIP_DIR = os.environ.get("PMCCLIP_DIR", "/data/wangyijun/model/PubMed")
+PMCCLIP_BERT_DIR = os.environ.get(
+    "PMCCLIP_BERT_DIR", "/data/wangyijun/model/BiomedCLIP/BiomedBERT"
+)
 
 # File URLs
 pmcclip_files = {
@@ -94,16 +98,17 @@ class ZeroshotPubMedCLIP(TrainerX):
 
         # Check for files in the directory and download if necessary
         for filename, url in pubmedclip_files.items():
-            filepath = os.path.join(directory, filename)
+            filepath = os.path.join(PUBMEDCLIP_DIR, filename)
             if not os.path.exists(filepath):
-                print(f"{filename} not found in {directory}. Downloading...")
+                os.makedirs(PUBMEDCLIP_DIR, exist_ok=True)
+                print(f"{filename} not found in {PUBMEDCLIP_DIR}. Downloading...")
                 download_file(url, filepath)
             else:
-                print(f"{filename} already exists in {directory}.")
+                print(f"{filename} already exists in {PUBMEDCLIP_DIR}.")
 
         print(f"Loading PubMedCLIP (backbone: ViT-B/32)")
         clip_model, _ = clip.load("ViT-B/32", device=self.device)
-        checkpoint = torch.load(os.path.join(directory,"PubMedCLIP_ViT32.pth"), map_location=self.device)
+        checkpoint = torch.load(os.path.join(PUBMEDCLIP_DIR,"PubMedCLIP_ViT32.pth"), map_location=self.device)
         clip_model.load_state_dict(checkpoint['state_dict'])
 
         temp = CUSTOM_TEMPLATES[cfg.DATASET.NAME]
@@ -165,25 +170,26 @@ class ZeroshotPMCCLIP(TrainerX):
 
         # Check for files in the directory and download if necessary
         for filename, url in pmcclip_files.items():
-            filepath = os.path.join(directory, filename)
+            filepath = os.path.join(PMCCLIP_DIR, filename)
             if not os.path.exists(filepath):
-                print(f"{filename} not found in {directory}. Downloading...")
+                os.makedirs(PMCCLIP_DIR, exist_ok=True)
+                print(f"{filename} not found in {PMCCLIP_DIR}. Downloading...")
                 download_file(url, filepath)
             else:
-                print(f"{filename} already exists in {directory}.")
+                print(f"{filename} already exists in {PMCCLIP_DIR}.")
 
 
         print(f"Loading PMC-CLIP (backbone: RN50)")
         image_encoder = ModifiedResNet(layers=[3,4,6,3], output_dim=768, heads=8, image_size=224, width=64)
-        image_encoder.load_state_dict(torch.load(os.path.join(directory,'image_encoder(resnet50).pth')))
-        text_encoder = AutoModel.from_pretrained('microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract')
-        text_encoder.load_state_dict(torch.load(os.path.join(directory,'text_encoder.pth')))
-        text_projection_layer = torch.load(os.path.join(directory,'text_projection_layer.pth'))
+        image_encoder.load_state_dict(torch.load(os.path.join(PMCCLIP_DIR,'image_encoder(resnet50).pth'), map_location="cpu"))
+        text_encoder = AutoModel.from_pretrained(PMCCLIP_BERT_DIR, local_files_only=True)
+        text_encoder.load_state_dict(torch.load(os.path.join(PMCCLIP_DIR,'text_encoder.pth'), map_location="cpu"))
+        text_projection_layer = torch.load(os.path.join(PMCCLIP_DIR,'text_projection_layer.pth'), map_location="cpu")
         text_projection_layer = nn.Parameter(text_projection_layer)
         self.text_encoder = text_encoder.to(self.device).eval()
         self.text_projection_layer = text_projection_layer.to(self.device)
         
-        tokenizer = AutoTokenizer.from_pretrained('microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract')
+        tokenizer = AutoTokenizer.from_pretrained(PMCCLIP_BERT_DIR, local_files_only=True)
         # clip_model.eval().to(self.device)
 
         temp = CUSTOM_TEMPLATES[cfg.DATASET.NAME]
@@ -260,17 +266,18 @@ class ZeroshotPubMedCLIP2(ZeroshotPubMedCLIP):
 
         # Check for files in the directory and download if necessary
         for filename, url in pubmedclip_files.items():
-            filepath = os.path.join(directory, filename)
+            filepath = os.path.join(PUBMEDCLIP_DIR, filename)
             if not os.path.exists(filepath):
-                print(f"{filename} not found in {directory}. Downloading...")
+                os.makedirs(PUBMEDCLIP_DIR, exist_ok=True)
+                print(f"{filename} not found in {PUBMEDCLIP_DIR}. Downloading...")
                 download_file(url, filepath)
             else:
-                print(f"{filename} already exists in {directory}.")
+                print(f"{filename} already exists in {PUBMEDCLIP_DIR}.")
 
 
         print(f"Loading PubMedCLIP (backbone: ViT-B/32)")
         clip_model, _ = clip.load("ViT-B/32", device=self.device)
-        checkpoint = torch.load(os.path.join(directory,"PubMedCLIP_ViT32.pth"), map_location=self.device)
+        checkpoint = torch.load(os.path.join(PUBMEDCLIP_DIR,"PubMedCLIP_ViT32.pth"), map_location=self.device)
         clip_model.load_state_dict(checkpoint['state_dict'])
 
         for params in clip_model.parameters():
@@ -335,26 +342,27 @@ class ZeroshotPMCCLIP2(ZeroshotPMCCLIP):
 
         # Check for files in the directory and download if necessary
         for filename, url in pmcclip_files.items():
-            filepath = os.path.join(directory, filename)
+            filepath = os.path.join(PMCCLIP_DIR, filename)
             if not os.path.exists(filepath):
-                print(f"{filename} not found in {directory}. Downloading...")
+                os.makedirs(PMCCLIP_DIR, exist_ok=True)
+                print(f"{filename} not found in {PMCCLIP_DIR}. Downloading...")
                 download_file(url, filepath)
             else:
-                print(f"{filename} already exists in {directory}.")
+                print(f"{filename} already exists in {PMCCLIP_DIR}.")
 
 
         print(f"Loading PMC-CLIP (backbone: RN50)")
         image_encoder = ModifiedResNet(layers=[3,4,6,3], output_dim=768, heads=8, image_size=224, width=64)
-        image_encoder.load_state_dict(torch.load(os.path.join(directory,'image_encoder(resnet50).pth')))
-        text_encoder = AutoModel.from_pretrained('microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract')
-        text_encoder.load_state_dict(torch.load(os.path.join(directory,'text_encoder.pth')))
-        text_projection_layer = torch.load(os.path.join(directory,'text_projection_layer.pth'))
+        image_encoder.load_state_dict(torch.load(os.path.join(PMCCLIP_DIR,'image_encoder(resnet50).pth'), map_location="cpu"))
+        text_encoder = AutoModel.from_pretrained(PMCCLIP_BERT_DIR, local_files_only=True)
+        text_encoder.load_state_dict(torch.load(os.path.join(PMCCLIP_DIR,'text_encoder.pth'), map_location="cpu"))
+        text_projection_layer = torch.load(os.path.join(PMCCLIP_DIR,'text_projection_layer.pth'), map_location="cpu")
         text_projection_layer = nn.Parameter(text_projection_layer)
         self.text_encoder = text_encoder.to(self.device).eval()
         self.text_projection_layer = text_projection_layer.to(self.device)
         self.image_encoder = image_encoder.to(self.device).eval()
         
-        tokenizer = AutoTokenizer.from_pretrained('microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract')
+        tokenizer = AutoTokenizer.from_pretrained(PMCCLIP_BERT_DIR, local_files_only=True)
 
         for params in self.image_encoder.parameters():
             params.requires_grad_(False)
