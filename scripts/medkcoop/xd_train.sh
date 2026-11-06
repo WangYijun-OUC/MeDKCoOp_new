@@ -11,10 +11,13 @@ SHOTS="${SHOTS:-16}"
 EPOCH="${EPOCH:-100}"
 TRAINER="${TRAINER:-GRAPH_DCPL_NO_TXT_VIS_GRAPH}"
 PYTHON_BIN="${PYTHON_BIN:-/data/wangyijun/conda/medkcoop/bin/python}"
+RUN_TAG="${RUN_TAG:-}"
+TAG_PREFIX="${RUN_TAG:+$RUN_TAG/}"
+EXTRA_OPTS="${EXTRA_OPTS:-}"
 [[ -x "$PYTHON_BIN" ]] || PYTHON_BIN=python
 CONFIG="$ROOT/configs/trainers/medkcoop/few_shot/${SOURCE}.yaml"
 DATASET_CONFIG="$ROOT/configs/datasets/${SOURCE}.yaml"
-DIR="$CKPT/cross_data/source/$SOURCE/shots_${SHOTS}/$TRAINER/seed${SEED}"
+DIR="$CKPT/cross_data/${TAG_PREFIX}source/$SOURCE/shots_${SHOTS}/$TRAINER/seed${SEED}"
 [[ -f "$CONFIG" && -f "$DATASET_CONFIG" ]] || { echo "缺少来源配置: $SOURCE" >&2; exit 1; }
 export CUDA_VISIBLE_DEVICES="$GPU"
 if [[ -d "$DIR" ]]; then

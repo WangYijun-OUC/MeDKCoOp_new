@@ -66,7 +66,7 @@ MeDKCoOp/
 | `trainers/{BiomedCoOp,CoOp,CoCoOp,KgCoOp,MaPLe,DCPL,GraphAdapter,Zeroshot}/` | `trainers/baselines/<同名>/` |
 | `scripts/graph_dcpl/` | `scripts/medkcoop/` |
 | `scripts/<baseline>/` | `scripts/baselines/<baseline>/` |
-| `Dassl.pytorch/`、`open_clip/`、`clip/`、`clip1/`、`MedSAM/` | `third_party/{Dassl.pytorch,open_clip,clip,MedSAM}/`（clip 与 clip1 已合并，`third_party/clip1/` 已删除） |
+| `Dassl.pytorch/`、`open_clip/`、`clip/`、`clip1/`、`MedSAM/` | `third_party/{Dassl.pytorch,open_clip,clip,MedSAM}/`（clip1 已并入 clip 并删除） |
 | `parse_test_res.py` | `tools/parse_test_res.py` |
 | `REPRO_PLAN.md` | `docs/REPRO_PLAN.md` |
 | 根 `README.md`（上游） | 已删除（见备份） |

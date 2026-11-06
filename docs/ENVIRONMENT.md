@@ -149,3 +149,26 @@ CUDA_VISIBLE_DEVICES=0 bash scripts/medkcoop/base2new.sh BTMRI1 1
 - 热图脚本已移出仓库，`--heatmap` 会给出明确提示。
 
 实际运行记录和静态验收见 `docs/VALIDATION.md`。
+
+## 7. 已知限制：eval-only 不能复现训练时的 base 指标
+
+`--mode train|test` 同时决定"训练/评测"和 "fc / new_fc" 分支：
+- train 模式构造 `fc`（源域类原型），test 模式构造 `new_fc`（目标域类原型）；
+- 因此用 `--mode train --eval-only` 复评 base 时，模型里没有训练得到的 `fc`，
+  实测只有 53.65%（论文训练日志是 80.5%）。
+
+**结论：base 指标只能由完整训练流程产出，不能用 eval-only 复评。**
+cross-data 的目标域评测走 test 分支、用目标集重建原型，属于设计行为，不是 bug。
+
+## 8. 显式离线加载
+
+`bootstrap.py` 提供：
+
+```python
+import bootstrap
+model, preprocess = bootstrap.load_biomedclip()
+tokenizer = bootstrap.load_biomedclip_tokenizer()
+```
+
+这两个函数不依赖全局 monkeypatch，可直接在任意脚本中使用；
+`import bootstrap` 时仍会自动 patch `open_clip`，保证现有 trainer 无需修改。

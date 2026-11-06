@@ -194,8 +194,10 @@ def extend_cfg(cfg):
     cfg.TRAINER.GRAPHDCPL.W = 1.0
     cfg.TRAINER.GRAPHDCPL.TRANSFER_EVAL = False
     # FIX 开关：见 docs/FIXES.md
-    cfg.TRAINER.GRAPHDCPL.GRAD_CTX = False        # True = learnable context 参与梯度
+    cfg.TRAINER.GRAPHDCPL.GRAD_CTX = True         # learnable context 参与梯度（修复版默认）
     cfg.TRAINER.GRAPHDCPL.TRAIN_VISUAL_NET = False  # True = visual_net 纳入 optimizer
+    cfg.TRAINER.GRAPHDCPL.LEARN_BETA = False        # True = beta 作为可学习标量
+    cfg.TRAINER.GRAPHDCPL.GRAD_IMGPROTO = False     # True = 图像原型参与梯度（去掉 .data）
 
     # Config for DCPL
     cfg.TRAINER.DCPL = CN()

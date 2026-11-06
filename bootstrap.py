@@ -83,4 +83,41 @@ def _patch_open_clip():
     _oc.get_tokenizer = get_tokenizer
 
 
+
+def load_biomedclip(model_name="hf-hub:microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224",
+                    return_transform=True):
+    """显式加载 BiomedCLIP（不依赖 monkeypatch，可在任意脚本中使用）。
+
+    优先使用本地权重；本地不存在时回退到 open_clip 默认行为（可能联网）。
+    """
+    from open_clip.src.open_clip.factory import create_model_from_pretrained
+
+    text_cfg = None
+    if os.path.exists(WEIGHTS) and os.path.exists(CLIP_CONFIG):
+        with open(CLIP_CONFIG, "r", encoding="utf-8") as f:
+            model_cfg = json.load(f)["model_cfg"]
+        text_cfg = dict(model_cfg["text_cfg"])
+        text_cfg["hf_model_name"] = BERT_DIR
+        text_cfg["hf_tokenizer_name"] = TOKENIZER_DIR
+        text_cfg["hf_model_pretrained"] = False
+        model, preprocess = create_model_from_pretrained(
+            "ViT-B-16",
+            pretrained=WEIGHTS,
+            embed_dim=model_cfg["embed_dim"],
+            vision_cfg=model_cfg["vision_cfg"],
+            text_cfg=text_cfg,
+            force_custom_text=True,
+            return_transform=return_transform,
+        )
+        return model, preprocess
+    return create_model_from_pretrained(model_name, return_transform=return_transform)
+
+
+def load_biomedclip_tokenizer(context_length=256, **kwargs):
+    """本地 BiomedBERT tokenizer。"""
+    from open_clip.src.open_clip.tokenizer import HFTokenizer
+
+    return HFTokenizer(TOKENIZER_DIR, context_length=context_length, **kwargs)
+
+
 _patch_open_clip()

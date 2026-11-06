@@ -375,7 +375,14 @@ class MultiModalPromptLearner(nn.Module):
         self.register_buffer("base_img_features", base_img_features)
         # self.alpha_it = cfg.TRAINER.GRAPHADAPTER.ALPHA
         self.alpha_it = 0.7
-        self.beta_it = 0.3
+        # ALG: beta 为文本原型残差权重。原实现硬编码 0.3；LEARN_BETA=True 时改为可学习标量
+        # （sigmoid 保证落在 (0,1)），让模型自己决定"信文本还是信融合图"。
+        self.learn_beta = getattr(cfg.TRAINER.GRAPHDCPL, "LEARN_BETA", False)
+        if self.learn_beta:
+            self._beta_logit = nn.Parameter(torch.zeros(1))
+            self.beta_it = None
+        else:
+            self.beta_it = 0.3
         self.node_num = 1
         self.hidden_dim = 512
 
@@ -401,6 +408,7 @@ class MultiModalPromptLearner(nn.Module):
         self.classnames = classnames
         # FIX 开关（见 docs/FIXES.md）
         self.grad_ctx = getattr(cfg.TRAINER.GRAPHDCPL, "GRAD_CTX", True)
+        self.grad_imgproto = getattr(cfg.TRAINER.GRAPHDCPL, "GRAD_IMGPROTO", False)
 
     def reset_parameters(self):
         for i in range(self.node_num):
@@ -438,7 +446,11 @@ class MultiModalPromptLearner(nn.Module):
         # graph_o_t_all.append(graph_o_t)         # [2, 1, 512]
         # graph_o_t = torch.stack(graph_o_t_all, dim=0).mean(dim=0)   #  [2, 512]
 
-        final_graph_feature = self.beta_it * self.base_text_features + (1 - self.beta_it) * fuse_features.squeeze()    # a*zt + (1-a)*z't
+        if self.learn_beta:
+            _beta = torch.sigmoid(self._beta_logit)
+        else:
+            _beta = self.beta_it
+        final_graph_feature = _beta * self.base_text_features + (1 - _beta) * fuse_features.squeeze()
         return final_graph_feature
 
     def build_prompt_graph(self, text_features, prompts):
@@ -448,7 +460,11 @@ class MultiModalPromptLearner(nn.Module):
             imgproto_features = F.normalize(self.new_fc.weight.data[:len(self.classnames)], p=2, dim=-1)
             # imgproto_features = F.normalize(self.base_img_features, p=2, dim=-1)
         else :
-            imgproto_features = F.normalize(self.fc.weight.data[:len(self.classnames)], p=2, dim=-1)         # [2, 512]
+            # ALG: 原实现用 .data（detach），图像原型拿不到梯度，GCN 只能从 edge 学。
+            # GRAD_IMGPROTO=True 时让 fc 参与前向图，GCN 可以直接调整原型方向。
+            _grad_proto = getattr(self, "grad_imgproto", False)
+            _fc_w = self.fc.weight if _grad_proto else self.fc.weight.data
+            imgproto_features = F.normalize(_fc_w[:len(self.classnames)], p=2, dim=-1)         # [2, 512]
         # imgproto_features = F.normalize(self.base_img_features, p=2, dim=-1)
         # FIX: 原实现用 no_grad 包住 prompts，导致 learnable context 永远拿不到梯度。
         # GRAD_CTX=True 时让 ctx 参与前向图（论文 3.4 声称只更新 GCN + context）。
