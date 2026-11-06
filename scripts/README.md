@@ -34,6 +34,9 @@ bash scripts/medkcoop/domain_genera.sh
 
 跨数据集和领域泛化入口已接通，但尚未完成论文 Table 2/3 的三种子数值验证。
 `MODEL_DIR` 可覆盖目标评测时的来源 checkpoint 路径。
+当前 `*v2` 数据集类把同一份 split 同时交给 `train_x` 与 `test`，而 MeDKCoOp
+会用 `train_x` 的标签构建视觉图。因此领域泛化结果必须连同这一数据使用方式披露，
+不能直接解释为完全不使用目标域标签的评测。
 
 ## 尚待整理的旧脚本
 

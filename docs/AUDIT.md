@@ -1,5 +1,11 @@
 # 代码与结构审查报告
 
+> 更新记录（2026-11-06）：`7962eac` 修复 base2new 完成判断与零值 CLI 参数；
+> `0ead634` 注册论文旧类名并修复 MeDKCoOp few-shot 入口；`c2fb05e` 修复
+> MeDKCoOp cross-data / domain 脚本及跨类别原型加载。以下是原始审查快照，
+> 其中 A1、A2、B6 和部分 B1 的“当前状态”已发生变化。Table 2/3 尚未重新训练验证。
+> 另须核查 `*v2` 数据集把同一 split 同时用于 `train_x` 与 `test` 的实验含义。
+
 > 审查范围：`/home/wangyijun/MeDKCoOp`（当前 HEAD `6912767` 之后的工作区）
 > 审查方式：静态检查 + 实际运行验证（base2new 48 个 run 已完成）
 > 本文只做诊断与建议，除清理缓存外未修改代码。
