@@ -36,7 +36,7 @@
 | B10 MaPLe 重复 trainer | 重复死文件已移除 |
 | B12 环境描述 | 已提供 `environment.yml` 和补全后的 `requirements.txt` |
 | B13 第三方归属 | 已加入 `NOTICE.md`；仍应在正式发布前做许可证复核 |
-| B14 重复特征计算 | 已提供缓存控制；BTMRI1 为兼容历史数据暂保留原缓存路径 |
+| B14 MedSAM/文本图重复计算 | 未关闭；现有 `FEWSHOT_CACHE` 只迁移采样索引缓存，不能替代特征缓存 |
 
 仍未关闭的高风险项是：完整 Table 2/3 尚未重跑；`visual_net` 没有进入 optimizer；
 以及 `*v2` 的目标域 `train_x`/`test` 重叠语义。三者均不能通过静默改代码解决。
