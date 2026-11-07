@@ -100,40 +100,21 @@ python train.py \
   DATASET.NUM_SHOTS 16 DATASET.SUBSAMPLE_CLASSES new
 ```
 
-## 5. 与论文对照
+## 5. 复现结果
 
-| 数据集 | 论文 base | 论文 new | 说明 |
-|---|---|---|---|
-| BTMRI1 | 85.57 | 92.10 | 3 seed 均值；seed1 原始日志 new=93.50 |
-| CHMNIST | 93.67 | 60.17 | |
-| Covid-19 | 78.97 | 91.07 | |
-| CTKIDNEY | 90.70 | 84.83 | |
-| LC25000 (lungcolon) | 94.27 | 96.27 | |
-| RETINA | 88.60 | 58.50 | |
-| OCTMNIST | 83.27 | 85.83 | |
-| Kvasir | 88.00 | 70.83 | |
+完整结果（base2new / cross-data / DG / 修复对照 / 算法改进）见 [RESULTS.md](RESULTS.md)。
+这里只保留一条快速自检基线：
 
-`trainers/medkcoop/reference/medkcoop.py` 与论文最终版（丢失源码，`GRAPH_DCPL_NO_TXT_VIS_GRAPH`）
-在实现上等价（字节码比对仅有 3 行**未被使用**的 `noise` 计算、辅助函数改名、一句 print）。
+| 指标 | 3 seed 均值 | 论文 Table 1 |
+|---|---|---|
+| BTMRI1 Base | 85.87 | 85.57 |
+| BTMRI1 New | 91.61 | 92.10 |
+| 8 数据集平均 Base | 87.50 | 87.88 |
+| 8 数据集平均 New | 79.75 | 79.95 |
 
-### 本次实测（conda `medkcoop`，BTMRI1，16-shot，seed 1，50 epoch）
-
-| 指标 | 本次重训 | 原始 seed1 日志 | 论文 3-seed 均值 |
-|---|---|---|---|
-| Base | **88.91%** | 88.90% | 85.57% |
-| New | **92.20%** | 93.50% | 92.10% |
-
-- Base 与原始 seed1 一致（1019 张里差 1 张），说明数据划分、模型与训练流程等价；
-- New 与原始 seed1 差 1.3 pp、与论文报告的 3-seed 均值差 0.1 pp，差异来自
-  `cudnn.benchmark=True` 导致的非确定性，以及 new 类原型对权重微扰更敏感；
-- 另一条独立验证：用原始 checkpoint 做 eval-only，本实现得到 93.71%，原始日志 93.50%。
-
-复现命令（`docs/ENVIRONMENT.md` 第 3 节）：
-
-```bash
-CUDA_VISIBLE_DEVICES=0 bash scripts/medkcoop/base2new.sh BTMRI1 1
-# 输出: /data/wangyijun/ckpt/MeDKCoOp/base2new/BTMRI1/shots_16/MeDKCoOp/vit_b16_0002_b50_randflip/seed1/
-```
+`trainers/medkcoop/reference/medkcoop.py` 与论文最终版（源码丢失，类名
+`GRAPH_DCPL_NO_TXT_VIS_GRAPH`）在实现上等价：字节码比对只差 3 行**未被使用**的
+`noise` 计算、辅助函数改名、一句 print。
 
 ## 6. 已知的暂时限制
 
@@ -148,7 +129,7 @@ CUDA_VISIBLE_DEVICES=0 bash scripts/medkcoop/base2new.sh BTMRI1 1
   checkpoint 的训练语义，应作为 corrected implementation 另做对照，而不是静默改动。
 - 热图脚本已移出仓库，`--heatmap` 会给出明确提示。
 
-实际运行记录和静态验收见 `docs/VALIDATION.md`。
+实际运行记录见 [RESULTS.md](RESULTS.md)；历史验证记录在 [archive/VALIDATION_2026-11-06.md](archive/VALIDATION_2026-11-06.md)。
 
 ## 7. 已知限制：eval-only 不能复现训练时的 base 指标
 

@@ -1,6 +1,6 @@
 # MeDKCoOp 代码修复记录
 
-> 对应审查报告：[AUDIT.md](AUDIT.md)、[REVIEW_2026-11-06.md](REVIEW_2026-11-06.md)
+> 对应审查报告：[archive/AUDIT_2026-11-06.md](archive/AUDIT_2026-11-06.md)、[archive/REVIEW_codex_2026-11-06.md](archive/REVIEW_codex_2026-11-06.md)
 > 原则：**原有实现保留不动**，修复版放进 `trainers/medkcoop/fixed/`，用开关逐项对照。
 
 ## 0. 一句话结论
@@ -161,7 +161,7 @@ python tools/collect_results.py /data/wangyijun/ckpt/MeDKCoOp_fixcmp --csv /tmp/
 
 ## 4. 对照结果
 
-见 [RESULTS_FIX.md](RESULTS_FIX.md)（跑完后填写）。
+完整对照见 [RESULTS.md](RESULTS.md) 第 4、5 节（含修复前后与算法改进）。
 
 ## 5. 尚未处理（需要你决策）
 

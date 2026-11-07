@@ -191,3 +191,21 @@ EOF
 ├── files_to_delete.tsv        # 1184 个模型，1043.0 GB
 └── *.logs.tar.gz              # 各项目日志归档（25 MB）
 ```
+
+
+## 9. 2026-11-07 补充清理
+
+| 项目 | 处理 |
+|---|---|
+| `ckpt/MeDKCoOp_sens` | 删除（是算法改进的前置探针 run，配置与 `alg_v3` BTMRI1 seed1 完全相同、结果逐位一致） |
+| `ckpt/medsam_cache`（268 GB） | 删除并重构。原实现缓存 256×64×64 全特征（4 MB/图，6.8 万文件）；调用方只用到空间均值，改为缓存 256 维向量（1.7 KB/图），缩小约 2400 倍，maxdiff = 0 |
+
+当前保留（截至 2026-11-07）：
+
+| 路径 | 大小 | 说明 |
+|---|---|---|
+| `ckpt/paper_base2new` | 52 GB | base2new 原版 + BiomedCoOp 复现产物（含模型） |
+| `ckpt/MeDKCoOp_xd` | 3.3 GB | cross-data + DG（含源域模型） |
+| `ckpt/MeDKCoOp_fixcmp` | 5.1 MB | 修复对照（仅日志） |
+| `ckpt/MeDKCoOp_alg` | 2.6 MB | 算法改进（仅日志） |
+| `ckpt/Biomed_Graph_dcpl` | 27 GB | 论文最终方法 24 个模型 + 2060 份日志 |

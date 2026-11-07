@@ -1,95 +1,104 @@
 # MeDKCoOp
 
-Biomedical **D**ual **K**nowledge-guided graph prompt learning（ACM MM'25）代码仓库。
+Biomedical **D**ual **K**nowledge-guided graph prompt learning（ACM MM'25）。
 
 > 论文：*MeDKCoOp: Dual Knowledge-guided Graph Prompt Learning for Biomedical Vision-Language Models*
-> 原项目：`/home/wangyijun/BiomedCoOp`（保持原样，未做任何修改）
-> 本文档描述的是**已按"只用论文实际用到的东西"精简过**的结构。
-
-## 目录结构（每一层都有明确用途）
-
-```
-MeDKCoOp/
-├── train.py                       # 唯一入口：训练 / 评测（DASSL）
-├── bootstrap.py                   # 路径引导 + 离线 BiomedCLIP 加载（train.py 第一行导入）
-├── configs/
-│   ├── datasets/                  # 论文 8 个数据集的 v1（base2new/few-shot）+ 7 个 v2（DG 目标域）
-│   └── trainers/                  # MeDKCoOp + 8 个 baseline 的超参
-├── datasets/                      # 与 configs/datasets 一一对应：8 个 v1 + 7 个 v2
-├── trainers/
-│   ├── medkcoop/
-│   │   ├── reference/medkcoop.py  # 现存最接近论文的参考实现
-│   │   ├── reference/paper_bytecode/  # 论文最终方法丢失源码后仅存的字节码（重建依据）
-│   │   └── ablation/              # 论文 Table 4/5、Fig 4 用到的 16 个变体
-│   └── baselines/                 # 论文对比的 8 个方法
-├── scripts/
-│   ├── medkcoop/                  # base2new / cross-data / DG / few-shot / 消融
-│   └── baselines/                 # 8 个 baseline 的同类脚本
-├── third_party/
-│   ├── Dassl.pytorch/             # 训练框架（需在新环境 pip install -e）
-│   ├── open_clip/                 # BiomedCLIP 加载
-│   ├── clip/                      # CLIP + pmcclip（已合并 clip1 的 MaPLe/IVLP 分支）
-│   └── MedSAM/                    # 视觉知识分支
-├── tools/collect_results.py       # 各任务日志 → seed 均值/方差/CSV
-├── tools/parse_test_res.py        # 兼容旧目录的日志汇总工具
-└── docs/                          # 环境与运行 / 复现方案 / 结构映射 / 权重清理清单
-```
-
-## 保留的东西为什么都在
-
-| 位置 | 存在理由 |
-|---|---|
-| `trainers/medkcoop/reference/medkcoop.py` | 论文方法当前可读、可运行的最近版本；重建以它为骨架 |
-| `reference/paper_bytecode/*.pyc` | 论文 "Ours"（`GRAPH_DCPL_NO_TXT_VIS_GRAPH`）源码丢失后的唯一残留 |
-| `ablation/` 16 个文件 | 分别对应 Table 4（视觉/文本知识消融）、Table 5（KRGC/KRTL 组合）、Fig 4（三种 backbone） |
-| `trainers/baselines/` 8 个 | 论文表格中的对比方法：BiomedCoOp、CoOp、CoCoOp、KgCoOp、MaPLe、DCPL、GraphAdapter、Zeroshot(BiomedCLIP) |
-| `third_party/clip` | 单一 CLIP 包：标准 CLIP + `pmcclip.py` + MaPLe/DCPL 的 IVLP 分支；所有 trainer 共用 |
-| `datasets/*v2.py` | domain generalization 的目标域数据（整份数据直接评测） |
-
-## 已删除的内容（可从备份恢复）
-
-按"不用就删"的原则移除了：非论文 baseline（ClipAdapter/DPLQ/LP/LP2/ProGrad/TipAdapter）、
-`main.py` 及其配套（`utils.py`、`utils/`、`datasets/utils.py`、`datasets/__init__.py`）、
-非论文数据集（BTMRI/BTMRIv2/BTMRI1v2/BUSI/CCBTM*/DermaMNIST*/KneeXray*）、
-34→16 之外的消融变体与 `hyper/`、BLIP 支线、qnn、descriptors、heatmap/可视化试跑脚本、
-上游 README/assets、`data/` 旧 split、`trainers copy/`。
-
-这些内容仍可从两处找回：
-
-- 本地归档分支 `archive/pre-squash`（包含整理前的完整历史，未推送到远端）
-- 备份：`/home/wangyijun/backup/BiomedCoOp_2026-11-05/`（全量 tar + `repo_archived/` 非代码大文件）
-
-## 关键外部资源
-
-| 资源 | 路径 |
-|---|---|
-| 数据集 | `/data/wangyijun/dataset/` |
-| BiomedCLIP 权重 | `/data/wangyijun/model/BiomedCLIP/`、`/data/wangyijun/model/BiomedCLIP_local/` |
-| MedSAM 权重 | `/data/wangyijun/model/medsam/sam_vit_b_01ec64.pth` |
-| 实验产物 | `/data/wangyijun/ckpt/Biomed_Graph_dcpl/` 等 |
+> 原项目：`/home/wangyijun/BiomedCoOp`（保持原样，未做任何修改，完整快照在
+> `/home/wangyijun/backup/BiomedCoOp_2026-11-05/`）
 
 ## 快速开始
 
 ```bash
 conda activate medkcoop
 cd /home/wangyijun/MeDKCoOp
+export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+
+# base2new（单次：数据集 + seed）
 GPU=0 bash scripts/medkcoop/base2new.sh BTMRI1 1
 ```
 
-完整环境、权重、单步命令与论文对照见 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)；8 数据集 base2new 复现结果见 [docs/RESULTS.md](docs/RESULTS.md)，结构与代码审查见 [docs/AUDIT.md](docs/AUDIT.md)；`/data` 权重清理建议见 [docs/WEIGHTS.md](docs/WEIGHTS.md)。
+## 复现状态（3 seeds 均值）
 
-## 当前状态
+| 任务 | 复现 | 论文 | 偏差 |
+|---|---|---|---|
+| base2new 平均 Base（8 数据集） | 87.50 | 87.88 | −0.38 |
+| base2new 平均 New（8 数据集） | 79.75 | 79.95 | −0.20 |
+| cross-data 平均（7 目标） | 52.78 | 54.35 | −1.56 |
+| domain generalization 平均（7 目标） | 52.97 | 54.17 | −1.20 |
+| BiomedCoOp base2new | 85.16 / 75.64 | 85.16 / 75.63 | ≤0.03 |
 
-- 已量化复现论文 base2new 主表，详见 `docs/RESULTS.md`。
-- MeDKCoOp 与 8 个 baseline 均提供独立的 base2new、few-shot、cross-data、domain-generalization
-  入口；各方法自己的训练/评测脚本直接调用 `train.py`，批量入口只调用同目录下的单次脚本，
-  详见 `scripts/README.md`。`scripts/run_all_methods.sh` 仅额外用于调用这些独立方法入口。
-- 已用 CoOp 做 1-epoch few-shot 与跨数据集真实运行验证，并验证 ZeroshotBiomedCLIP 评测入口。
-- MeDKCoOp 已完成一次 BTMRI1 16-shot、seed 1、100 epoch 源域训练，并由独立的
-  `xd_test.sh` 加载 checkpoint 完成 CHMNIST 目标域评测；记录见 `docs/VALIDATION.md`。
-- cross-data / domain-generalization 的完整三种子结果仍需重跑；`*v2` 数据使用方式的解释限制见
-  `scripts/README.md`。
+完整表格与结论见 [docs/RESULTS.md](docs/RESULTS.md)。
 
-## 复现规划
+## 目录结构
 
-见 [docs/REPRO_PLAN.md](docs/REPRO_PLAN.md)。
+```
+MeDKCoOp/
+├── train.py                     # 唯一训练/评测入口（DASSL）
+├── bootstrap.py                 # sys.path 引导 + 离线 BiomedCLIP 加载
+├── configs/
+│   ├── datasets/                # 8 个 v1 + 7 个 v2
+│   └── trainers/                # medkcoop + 8 个 baseline
+├── datasets/                    # 与 configs/datasets 一一对应
+├── trainers/
+│   ├── medkcoop/
+│   │   ├── reference/           # 论文原实现（对照）+ 丢失源码的字节码
+│   │   ├── fixed/               # 修复版 + 算法开关
+│   │   └── ablation/            # 16 个论文消融变体
+│   └── baselines/               # 8 个对比方法
+├── scripts/
+│   ├── medkcoop/                # base2new / xd_train / xd_test / few_shot / 消融
+│   ├── baselines/               # 各 baseline 的同名脚本
+│   └── run_all_methods.sh       # 批量调度
+├── third_party/                 # Dassl.pytorch open_clip clip MedSAM
+├── tools/                       # 结果汇总（compare_fix / compare_xd / compare_alg）
+├── tests/                       # 6 个冒烟测试
+└── docs/                        # 见 docs/README.md
+```
+
+详细的语义边界与 trainer 类清单见 [docs/STRUCTURE.md](docs/STRUCTURE.md)。
+
+## 关于论文实现的一个已知事实
+
+原实现（`trainers/medkcoop/reference/medkcoop.py`）中，learnable context 因为
+`torch.no_grad()` 切断了梯度，**从未被训练**；实际只有 `GCN_fuse` 在更新。
+修复版（`fixed/medkcoop.py`，`GRAD_CTX=True` 默认）让 context 真正参与训练，
+指标几乎不变（≤0.04 pp），说明 base2new 的收益主要来自 MedSAM 视觉偏置 + GCN 重加权。
+在此基础上放大 prompt 学习能力（`N_CTX=8`、`lr=1e-2`）可再提升 New 类 +1.10 pp。
+细节与数据见 [docs/FIXES.md](docs/FIXES.md) 与 [docs/RESULTS.md](docs/RESULTS.md)。
+
+## 文档
+
+从 [docs/README.md](docs/README.md) 开始：
+
+| 文档 | 内容 |
+|---|---|
+| [docs/STRUCTURE.md](docs/STRUCTURE.md) | 目录结构、语义边界、开关说明 |
+| [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) | 环境、权重、数据、运行命令 |
+| [docs/RESULTS.md](docs/RESULTS.md) | 全部实验结果 |
+| [docs/FIXES.md](docs/FIXES.md) | 代码问题与修复记录 |
+| [docs/WEIGHTS.md](docs/WEIGHTS.md) | 磁盘清理记录 |
+| [docs/archive/](docs/archive/) | 历史审查与方案（不再更新） |
+
+## 关键外部资源
+
+| 资源 | 路径 |
+|---|---|
+| 数据集 | `/data/wangyijun/dataset/` |
+| BiomedCLIP 权重 | `/data/wangyijun/model/BiomedCLIP/` |
+| MedSAM 权重 | `/data/wangyijun/model/medsam/sam_vit_b_01ec64.pth` |
+| 复现产物 | `/data/wangyijun/ckpt/{paper_base2new,MeDKCoOp_xd,MeDKCoOp_alg,MeDKCoOp_fixcmp}` |
+
+## 测试
+
+```bash
+python -m pytest tests -q   # 6 passed
+```
+
+## 已删除的历史内容
+
+非论文 baseline（ClipAdapter/DPLQ/LP/LP2/ProGrad/TipAdapter）、旧 few-shot 管线
+（`main.py`、根 `utils.py`）、非论文数据集（BTMRI/BUSI/CCBTM*/DermaMNIST*/KneeXray*）、
+34→16 之外的消融变体、BLIP、qnn、descriptors、heatmap 脚本、`data/` 旧 split、`trainers copy/`。
+
+可从两处恢复：本地 git 分支 `archive/pre-squash`，或备份目录
+`/home/wangyijun/backup/BiomedCoOp_2026-11-05/`（全量 tar + `repo_archived/`）。

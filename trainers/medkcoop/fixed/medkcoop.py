@@ -77,12 +77,19 @@ def _medsam_cache_put(key, value):
         print("[medsam-cache] write failed:", exc)
 
 
-def medsam_encode(medical_model, image, chunk=None, cache=None):
+def medsam_encode(medical_model, image, chunk=None, cache=None, pooled=False):
+    """分块过 MedSAM 编码器。
+
+    pooled=True 时返回空间均值后的 [B, 256] 特征（调用方只用均值，可大幅缩小缓存）；
+    cache=True 时按输入张量哈希读写缓存（仅 pooled 模式支持，因为全特征太大）。
+    """
     if chunk is None:
         chunk = int(os.environ.get("MEDSAM_CHUNK", "2"))
-    """分块过 MedSAM 编码器；cache=True 时按张量哈希读写缓存。"""
     if not _MEDSAM_CACHE_ENABLED:
         cache = False
+    if cache and not pooled:
+        cache = False   # 全特征 4MB/图，不做缓存
+
     if cache:
         keys = [_medsam_cache_key(x) for x in image]
         cached = [_medsam_cache_get(k) for k in keys]
@@ -90,15 +97,21 @@ def medsam_encode(medical_model, image, chunk=None, cache=None):
             return torch.stack(cached).to(image.device)
         out = []
         for i, k in enumerate(keys):
-            feats = medsam_encode(medical_model, image[i:i + 1], chunk=chunk, cache=False)
-            _medsam_cache_put(k, feats[0].detach().to("cpu"))
-            out.append(feats)
+            # 单张图：先编码再池化，只存 256 维
+            feat = medsam_encode(medical_model, image[i:i + 1], chunk=chunk, cache=False, pooled=True)
+            _medsam_cache_put(k, feat[0].detach().to("cpu"))
+            out.append(feat)
         return torch.cat(out, dim=0)
+
     _med_in = nn.functional.interpolate(image, (1024, 1024))
-    return torch.cat(
+    raw = torch.cat(
         [medical_model.image_encoder(chunk_) for chunk_ in torch.split(_med_in, chunk, dim=0)],
         dim=0,
     )
+    if pooled:
+        b, c, h, w = raw.shape
+        return raw.view(b, c, h * w).mean(dim=-1)
+    return raw
 
 
 class TextEncoder(nn.Module):
@@ -227,10 +240,9 @@ def build_image_graph(cfg, classnames, biomedclip_model, img_encoder, train_load
             # 评测阶段（mode=test）图像 transform 是确定性的，可安全复用缓存；
             # 训练阶段有 random_resized_crop，同一图每次张量不同，不能缓存。
             _cache_ok = str(getattr(cfg.MODEL, "mode", "")).lower() == "test"
-            medical_feature = medsam_encode(medical_model, image, cache=_cache_ok).cpu()
-            mb,mc,mh,mw = medical_feature.shape
-            medical_feature = medical_feature.view(mb,mc,mh*mw)
-            remote_mae_feature = medical_feature.mean(dim=-1).type(dtype)
+            remote_mae_feature = medsam_encode(
+                medical_model, image, cache=_cache_ok, pooled=True
+            ).type(dtype)
             
             image_features = img_encoder(image.type(dtype))     # [4, 512]
             # tensor cuda8 torch.float16 tensor[2, 768],cuda8,torch.float16,grad_fn 8 * [2, 768] cuda8 torch.float16
@@ -632,13 +644,11 @@ class CustomCLIP(nn.Module):
         
         with torch.no_grad():
             # MedSAM 的 1024x1024 注意力很吃显存：分块前向，数值与整批一致
-            medical_feature = medsam_encode(
+            remote_mae_feature = medsam_encode(
                 self.medical_model, image,
                 cache=not self.training and not torch.is_grad_enabled(),
-            )
-            mb,mc,mh,mw = medical_feature.shape
-            medical_feature = medical_feature.view(mb,mc,mh*mw)
-            remote_mae_feature = medical_feature.mean(dim=-1).type(self.dtype)
+                pooled=True,
+            ).type(self.dtype)
 
         # print(image.shape)                  # [4, 3, 224, 224]
         # print(medical_feature.shape)        # [4, 256, 4096]
