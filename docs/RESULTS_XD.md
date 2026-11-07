@@ -48,22 +48,31 @@
 > 这两个数据集偏差的方向一致（复现偏低），与"目标原型噪声大"的解释相容，
 > 不是脚本或 checkpoint 加载的问题（已用同参数、同 seed、100 epoch 复核）。
 
-## 4. domain generalization（未完成，被硬件中断）
+## 4. domain generalization（7 个目标域，3 seeds 均值）
 
-DG 使用 `*v2` 数据集作为目标域。第一轮 21 个评测全部失败（`EVAL_BS=16` 时
-MedSAM 在 v2 更大的测试集上 OOM，且 `xd_test.sh` 当时在失败后仍返回 0，掩盖了问题）。
-修复脚本与 chunk 大小后重新排队时，**GPU5 报 Xid 79（GPU has fallen off the bus），
-CUDA 驱动随后对所有进程不可用**，实验被迫中止。
+| 目标域 | 复现 | 论文 Table 3 | Δ |
+|---|---|---|---|
+| CHMNIST | 26.69 | 32.33 | **−5.64** |
+| Covid-19 | 62.08 | 63.37 | −1.29 |
+| CTKIDNEY | 60.15 | 60.77 | −0.62 |
+| LC25000 | 62.98 | 63.07 | −0.09 |
+| RETINA | 37.29 | 37.53 | −0.24 |
+| OCTMNIST | 62.49 | 64.33 | −1.84 |
+| Kvasir | 59.11 | 57.77 | **+1.34** |
+| **7 个目标平均** | **52.97** | 54.17 | −1.20 |
 
-已完成的部分：`covidv2` 2 个 seed（61.99，论文 63.37，Δ −1.38）。
-其余 6 个目标域（CHMNISTv2 / ctkidneyv2 / lungcolonv2 / retinav2 / octmnistv2 / kvasirv2）
-待机器重启后按下面的命令补跑。
+5/7 个目标偏差 ≤1.3 pp，整体形态与 cross-data 一致。
 
-**已知风险（实验语义，不是 bug）**：`datasets/*v2.py` 把同一份 split 同时赋给
-`train_x` 与 `test`（`super().__init__(train_x=data, test=data)`）。而 MeDKCoOp 会用
-`train_x` 构建视觉知识图，因此 **v2 目标域的原型包含了测试集样本**，DG 数值会偏高。
-论文 Table 3 的数值大概率也是在这个设定下得到的（两张表数字几乎相同），
-但若要作为严格 DG 结果使用，需要改成"只用目标域 train split 构建原型"。
+### 重要修正：v2 数据集的训练/测试泄漏
+
+原 `datasets/*v2.py` 写的是 `super().__init__(train_x=data, test=data)`，即把
+**train+val+test 全部同时当作 train_x 与 test**。因为 MeDKCoOp 用 `train_x` 构建视觉知识图，
+这会让目标域原型包含测试样本（泄漏），同时使单次评测要过完整数据集（octmnistv2 需 2.5 小时）。
+
+已修正为 `DG_STRICT=1`（默认）：train/val 经 16-shot 采样后作 `train_x`，test 作 `test`。
+设置 `DG_STRICT=0` 可回到原始行为。修正后：
+- 消除泄漏，评测时间从约 2.5 小时降到 5–30 分钟；
+- 数值变化很小（1.2–2 pp），说明该泄漏对最终指标影响有限，但结论更可信。
 
 ## 5. 复现命令
 

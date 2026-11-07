@@ -19,9 +19,21 @@ class CHMNISTv2(DatasetBase):
         self.dataset_dir = os.path.join(root, self.dataset_dir)
         self.image_dir = os.path.join(self.dataset_dir, "kather_texture_2016_image_tiles_5000/Kather_texture_2016_image_tiles_5000")
         self.split_path = os.path.join(self.dataset_dir, "split_CHMNIST.json")
-        data = self.read_data(self.split_path)
-
-        super().__init__(train_x=data, test=data)
+        # DG 语义修正（见 docs/FIXES.md）：
+        # 原实现把 train+val+test 全部同时当作 train_x 与 test，
+        # 使得目标域原型（build_image_graph 用 train_x）包含测试样本，
+        # 既是训练/测试泄漏，也让单次评测要过完整数据集。
+        # DG_STRICT=1（默认）改为 train/val -> train_x，test -> test。
+        if os.environ.get("DG_STRICT", "1") == "1":
+            train, val, test = self.read_split(self.split_path, self.image_dir)
+            num_shots = cfg.DATASET.NUM_SHOTS
+            if num_shots >= 1:
+                train = self.generate_fewshot_dataset(train, num_shots=num_shots)
+                val = self.generate_fewshot_dataset(val, num_shots=min(num_shots, 4))
+            super().__init__(train_x=train, val=val, test=test)
+        else:
+            data = self.read_data(self.split_path)
+            super().__init__(train_x=data, test=data)
     
     def read_data(self, split_file):
         items = []

@@ -50,7 +50,15 @@ def _medsam_cache_get(key):
         return _MEDSAM_CACHE[key]
     path = os.path.join(_MEDSAM_CACHE_DIR, key[:2], key + ".pt")
     if os.path.exists(path):
-        val = torch.load(path, map_location="cpu")
+        try:
+            val = torch.load(path, map_location="cpu")
+        except Exception:
+            # 并发写入可能留下半截文件；删掉重算，不要让整个评测崩掉
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+            return None
         _MEDSAM_CACHE[key] = val
         return val
     return None
@@ -59,8 +67,12 @@ def _medsam_cache_get(key):
 def _medsam_cache_put(key, value):
     _MEDSAM_CACHE[key] = value
     try:
-        os.makedirs(os.path.join(_MEDSAM_CACHE_DIR, key[:2]), exist_ok=True)
-        torch.save(value, os.path.join(_MEDSAM_CACHE_DIR, key[:2], key + ".pt"))
+        subdir = os.path.join(_MEDSAM_CACHE_DIR, key[:2])
+        os.makedirs(subdir, exist_ok=True)
+        final = os.path.join(subdir, key + ".pt")
+        tmp = final + ".tmp." + str(os.getpid())
+        torch.save(value, tmp)
+        os.replace(tmp, final)   # 原子替换，避免其它进程读到半截文件
     except Exception as exc:  # 缓存失败不影响主流程
         print("[medsam-cache] write failed:", exc)
 
@@ -212,7 +224,10 @@ def build_image_graph(cfg, classnames, biomedclip_model, img_encoder, train_load
             label = batch["label"]
             label = label.cuda()
  
-            medical_feature = medsam_encode(medical_model, image, cache=False).cpu()
+            # 评测阶段（mode=test）图像 transform 是确定性的，可安全复用缓存；
+            # 训练阶段有 random_resized_crop，同一图每次张量不同，不能缓存。
+            _cache_ok = str(getattr(cfg.MODEL, "mode", "")).lower() == "test"
+            medical_feature = medsam_encode(medical_model, image, cache=_cache_ok).cpu()
             mb,mc,mh,mw = medical_feature.shape
             medical_feature = medical_feature.view(mb,mc,mh*mw)
             remote_mae_feature = medical_feature.mean(dim=-1).type(dtype)
@@ -444,7 +459,7 @@ class MultiModalPromptLearner(nn.Module):
         if self.learn_beta:
             self._beta_logit = nn.Parameter(torch.zeros(1))
             self.beta_it = None
-        else:
+        else: 
             self.beta_it = 0.3
         self.node_num = 1
         self.hidden_dim = 512
