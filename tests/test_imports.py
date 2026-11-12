@@ -14,7 +14,6 @@ def test_all_trainers_import():
 
     registry = TRAINER_REGISTRY._obj_map
     assert "MeDKCoOp" in registry
-    assert "GRAPH_DCPL_NO_TXT_VIS_GRAPH" in registry
     assert "MeDKCoOpFix" in registry
     for name in ("CoOp_BiomedCLIP", "BiomedCoOp_BiomedCLIP", "DCPL_biomedclip", "MaPLe_CLIP"):
         assert name in registry, name

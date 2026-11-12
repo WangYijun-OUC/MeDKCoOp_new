@@ -769,7 +769,3 @@ class MeDKCoOp(TrainerX):
             #     # print(f" - Weights: {param.data}\n")
             print(self._models[name])
 
-
-@TRAINER_REGISTRY.register()
-class GRAPH_DCPL_NO_TXT_VIS_GRAPH(MeDKCoOp):
-    """论文训练日志使用的类名；保留旧脚本和 checkpoint 路径兼容。"""

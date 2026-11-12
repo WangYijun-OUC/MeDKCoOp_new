@@ -14,13 +14,13 @@ medkcoop/
 
 ## Which class produces the reported numbers
 
-The reported results are produced by the trainer registered as
-**`GRAPH_DCPL_NO_TXT_VIS_GRAPH`** — an identifier inherited from the ablation naming scheme.
-`MeDKCoOp` is a registered alias of the same implementation, so both names select identical code.
+The reported results are produced by the trainer registered as **`MeDKCoOp`**, implemented in
+`reference/medkcoop.py`. The improved variant is registered as **`MeDKCoOpFix`** and lives in
+`fixed/medkcoop.py`.
 
-During the final stage of the project the source file of that variant was lost; only its compiled
-bytecode remained (`reference/paper_bytecode/`). The implementation in `reference/medkcoop.py` was
-recovered from that bytecode and differs only in:
+During the final stage of the project the source file of the reported variant was lost; only its
+compiled bytecode remained (`reference/paper_bytecode/`). The implementation in
+`reference/medkcoop.py` was recovered from that bytecode and differs only in:
 
 - the class name;
 - the helper name `edge_construct` (originally `cal_edge_emb`, identical logic);

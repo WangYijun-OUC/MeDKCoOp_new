@@ -37,7 +37,7 @@ Zeroshot has no training stage, so its directory provides evaluation entry point
 
 | Directory | Trainer | base2new epochs | few-shot / transfer epochs |
 |---|---|---:|---:|
-| medkcoop | `GRAPH_DCPL_NO_TXT_VIS_GRAPH` | 50 | 100 |
+| medkcoop | `MeDKCoOp` | 50 | 100 |
 | biomedcoop | `BiomedCoOp_BiomedCLIP` | 50 | 100 |
 | coop | `CoOp_BiomedCLIP` | 50 | 100 |
 | cocoop | `CoCoOp_BiomedCLIP` | 50 | 100 |

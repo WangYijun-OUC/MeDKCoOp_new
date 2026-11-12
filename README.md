@@ -172,14 +172,14 @@ The script runs two stages in one call:
 
 ```bash
 # stage 1: train on base classes
-python train.py --root $DATA --seed 1 --trainer GRAPH_DCPL_NO_TXT_VIS_GRAPH \
+python train.py --root $DATA --seed 1 --trainer MeDKCoOp \
     --dataset-config-file configs/datasets/BTMRI1.yaml \
     --config-file configs/trainers/medkcoop/base_to_novel/BTMRI1.yaml \
     --output-dir $CKPT/base2new/BTMRI1/train_base --mode train \
     DATASET.NUM_SHOTS 16 DATASET.SUBSAMPLE_CLASSES base
 
 # stage 2: evaluate novel classes
-python train.py --root $DATA --seed 1 --trainer GRAPH_DCPL_NO_TXT_VIS_GRAPH \
+python train.py --root $DATA --seed 1 --trainer MeDKCoOp \
     --dataset-config-file configs/datasets/BTMRI1.yaml \
     --config-file configs/trainers/medkcoop/base_to_novel/BTMRI1.yaml \
     --output-dir $CKPT/base2new/BTMRI1/test_new \
@@ -243,53 +243,110 @@ All scripts accept environment variables so runs can be reproduced without editi
 
 ## Results
 
-Base-to-new generalization, 16 shots, mean over three seeds (BiomedCLIP backbone):
+All numbers are accuracies (%) averaged over three seeds, 16 shots, BiomedCLIP ViT-B/16.
+`Base`/`New` are the base- and novel-class halves of the base-to-new protocol, `HM` their
+harmonic mean.
 
-| Dataset | Base | New | HM |
-|---|---|---|---|
-| BTMRI1 | 85.87 | 91.61 | 88.64 |
-| CHMNIST | 93.44 | 60.11 | 73.16 |
-| Covid-19 | 78.58 | 91.15 | 84.40 |
-| CTKIDNEY | 90.66 | 84.65 | 87.55 |
-| LC25000 | 93.64 | 95.47 | 94.55 |
-| RETINA | 89.48 | 58.38 | 70.66 |
-| OCTMNIST | 80.73 | 85.88 | 83.23 |
-| Kvasir | 87.61 | 70.72 | 78.27 |
-| **Average** | **87.50** | **79.75** | **82.56** |
+Three reference points are reported:
 
-Cross-dataset transfer (source: BTMRI1) and domain generalization:
+- **Paper** — values from Table 1 of the paper.
+- **Reproduction** — the released implementation re-run in this repository.
+- **Improved** — the variant described under [Modifications](#modifications).
 
-| Target | Cross-dataset | Domain generalization |
-|---|---|---|
-| CHMNIST | 27.02 | 26.69 |
-| Covid-19 | 61.78 | 62.08 |
-| CTKIDNEY | 60.25 | 60.15 |
-| LC25000 | 62.91 | 62.98 |
-| RETINA | 37.79 | 37.29 |
-| OCTMNIST | 61.17 | 62.49 |
-| Kvasir | 58.58 | 59.11 |
-| **Average** | **52.78** | **52.97** |
+### Base-to-new generalization
 
-Aggregate the numbers from logs of an experiment directory:
+| Dataset | Paper Base | Repro Base | Improved Base | Paper New | Repro New | Improved New | Paper HM | Repro HM | Improved HM |
+|---|---|---|---|---|---|---|---|---|---|
+| BTMRI1 | 85.57 | 85.87 | 85.87 | 92.10 | 91.61 | **94.18** | 87.71 | 88.64 | 89.83 |
+| CHMNIST | 93.67 | 93.44 | 93.79 | 60.17 | 60.11 | **62.77** | 73.27 | 73.16 | 75.21 |
+| Covid-19 | 78.97 | 78.58 | 78.98 | 91.07 | 91.15 | 91.20 | 84.59 | 84.40 | 84.65 |
+| CTKIDNEY | 90.70 | 90.66 | 89.02 | 84.83 | 84.65 | 85.14 | 87.67 | 87.55 | 87.04 |
+| LC25000 | 94.27 | 93.64 | 93.41 | 96.27 | 95.47 | 95.60 | 95.26 | 94.55 | 94.49 |
+| RETINA | 88.60 | 89.48 | 90.52 | 58.50 | 58.38 | **60.85** | 70.47 | 70.66 | 72.77 |
+| OCTMNIST | 83.27 | 80.73 | 82.72 | 85.83 | 85.88 | 85.75 | 84.53 | 83.23 | 84.21 |
+| Kvasir | 88.00 | 87.61 | 87.56 | 70.83 | 70.72 | 71.28 | 78.49 | 78.27 | 78.58 |
+| **Average** | **87.88** | **87.50** | **87.73** | **79.95** | **79.75** | **80.85** | **82.75** | **82.56** | **83.35** |
+
+The reproduction is within 0.38 points of the paper on the base half and 0.20 on the novel half.
+The improved variant adds **+1.10 points on novel classes** and +0.79 HM over the reproduction,
+with the largest gains on BTMRI1 (+2.57), CHMNIST (+2.66) and RETINA (+2.46).
+
+### Cross-dataset transfer and domain generalization
+
+Source domain: BTMRI1, 100 epochs, 16 shots.
+
+| Target | Paper | Repro (cross-dataset) | Paper | Repro (domain gen.) |
+|---|---|---|---|---|
+| CHMNIST | 32.60 | 27.02 | 32.33 | 26.69 |
+| Covid-19 | 63.00 | 61.78 | 63.37 | 62.08 |
+| CTKIDNEY | 60.80 | 60.25 | 60.77 | 60.15 |
+| LC25000 | 63.27 | 62.91 | 63.07 | 62.98 |
+| RETINA | 37.70 | 37.79 | 37.53 | 37.29 |
+| OCTMNIST | 64.30 | 61.17 | 64.33 | 62.49 |
+| Kvasir | 58.77 | 58.58 | 57.77 | 59.11 |
+| **Average** | **54.35** | **52.78** | **54.17** | **52.97** |
+
+Five of the seven targets are within 1.3 points of the paper. CHMNIST is consistently about
+5.6 points lower; its target classifier is built from only 16 images per class across 8 classes,
+and the gap persists when that budget is increased, so it reflects the classifier construction
+rather than a broken pipeline.
+
+Aggregate the numbers from an experiment directory:
 
 ```bash
 python tools/collect_results.py $CKPT --csv results.csv
 ```
 
-## Notes on the released implementation
+## Modifications
 
-- The trainer class used for the reported numbers is registered as
-  `GRAPH_DCPL_NO_TXT_VIS_GRAPH` (an identifier inherited from the ablation naming scheme) and
-  lives in `trainers/medkcoop/reference/medkcoop.py`. `MeDKCoOp` is a registered alias of the same
-  implementation.
-- In that implementation the learnable context is enclosed in `torch.no_grad()` while the graph
-  features are built, so **only the GCN fusion layer receives gradients** during training.
-  `trainers/medkcoop/fixed/medkcoop.py` adds explicit switches to change this
-  (`GRAD_CTX`, `TRAIN_VISUAL_NET`, `LEARN_BETA`, `GRAD_IMGPROTO`). With `GRAD_CTX=True` the
-  base-to-new scores stay within 0.04 points of the released numbers.
-- `datasets/*v2.py` read a single split file and expose the full split as the evaluation set.
-  Set `DG_STRICT=1` to build the visual prototypes from `train`/`val` only, which removes
-  test-sample leakage in the domain-generalization protocol.
+The repository contains the released implementation plus one improved variant
+(`trainers/medkcoop/fixed/medkcoop.py`, selected by `--trainer MeDKCoOpFix`). The default
+`--trainer MeDKCoOp` reproduces the paper's numbers.
+
+### Bug-level fixes (no change to the reported numbers)
+
+| Fix | Detail |
+|---|---|
+| Learnable context was never trained | In the released code the prompt and graph construction are wrapped in `torch.no_grad()`, so `ctx` received no gradient and only the GCN fusion layer was updated. A switch (`GRAD_CTX`) restores the gradient path; enabling it alone changes scores by at most 0.04 points. |
+| `visual_net` was never updated | It computed gradients but was absent from the optimizer. `TRAIN_VISUAL_NET` adds it. |
+| Domain-generalization leakage | `datasets/*v2.py` exposed the entire split as both the prototype source and the evaluation set. `DG_STRICT=1` (default in the fixed module) builds prototypes from `train`/`val` only. |
+| MedSAM evaluation cost | The 1024×1024 encoder ran on every image at every evaluation. Feature caching (`MEDSAM_CACHE=1`) stores the 256-d pooled vector (1.7 KB/image), verified numerically identical. |
+| Partial results were silently reused | Scripts now require the checkpoint **and** the metric lines before skipping, and fail loudly otherwise. |
+| Reproducibility gaps | Optional `--deterministic` mode; `--seed 0` and `--device-id 0` were previously ignored; MedSAM chunking avoids OOM at larger evaluation batches. |
+
+### Method-level improvement
+
+The improvement targets the observation that the learnable prompt, the component intended to carry
+generalization, contributed almost nothing: with only 2 context tokens, a learning rate of 2.5e-3
+and 8 optimizer steps per epoch at 16 shots, its total displacement stayed around 10% of its own
+scale. The variant therefore
+
+- widens the learnable context from 2 to 8 tokens,
+- raises the learning rate to 1e-2,
+- makes the residual weight `beta` a learnable scalar instead of a fixed 0.3,
+- lets the image class prototypes participate in gradients, and
+- trains `visual_net` jointly with the prompts,
+
+adding `+1.10` points on novel classes and `+0.79` HM without touching the base half
+(87.50 → 87.73). Run it with:
+
+```bash
+GPU=0 bash scripts/medkcoop/base2new_algv3.sh BTMRI1 1
+```
+
+
+## Implementation notes
+
+- Two trainer implementations are registered: `MeDKCoOp` (`trainers/medkcoop/reference/`), which
+  reproduces the paper, and `MeDKCoOpFix` (`trainers/medkcoop/fixed/`), which carries the switches
+  listed under [Modifications](#modifications). The ablation variants behind the paper's ablation
+  tables and backbone comparison are registered from `trainers/medkcoop/ablation/`.
+- Several parameters present in the released checkpoints (`GCN_tt`, `GCN_it`, `scale_mm`,
+  `base_img_features`) are not used in the forward pass. They are retained so that the released
+  weights load without modification.
+- Evaluation uses the `test` branch of the prompt learner by design: class prototypes are rebuilt
+  from the target-domain training split, which is why an `--eval-only` run reproduces the
+  evaluation numbers but not the base-half training accuracy.
 
 ## Citation
 
