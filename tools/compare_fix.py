@@ -5,8 +5,8 @@
     python tools/compare_fix.py
 
 默认读取：
-    原版    /data/wangyijun/ckpt/paper_base2new/base2new        (trainer=MeDKCoOp)
-    fix_ctx /data/wangyijun/ckpt/MeDKCoOp_fixcmp/base2new/cmp_fix_ctx   (trainer=MeDKCoOpFix)
+    原版    ./output/paper_base2new/base2new        (trainer=MeDKCoOp)
+    fix_ctx ./output/MeDKCoOp_fixcmp/base2new/cmp_fix_ctx   (trainer=MeDKCoOpFix)
     fix_ctxvis 同上 /cmp_fix_ctxvis
 """
 
@@ -17,8 +17,8 @@ import statistics
 
 ACC_RE = re.compile(r"\* accuracy:\s*([\d.]+)%")
 
-OLD = "/data/wangyijun/ckpt/paper_base2new/base2new"
-NEW = "/data/wangyijun/ckpt/MeDKCoOp_fixcmp/base2new"
+OLD = "./output/paper_base2new/base2new"
+NEW = "./output/MeDKCoOp_fixcmp/base2new"
 DATASETS = ["BTMRI1", "CHMNIST", "covid", "ctkidney", "lungcolon", "retina", "octmnist", "kvasir"]
 CFG = "vit_b16_0002_b50_randflip"
 SEEDS = ["1", "2", "3"]

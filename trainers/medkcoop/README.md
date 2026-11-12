@@ -1,60 +1,93 @@
 # trainers/medkcoop
 
-论文方法与消融。**代码内容未改动，只调整了位置与文件集合。**
+Implementation of **MeDKCoOp** (dual knowledge-guided graph prompt learning) and the ablation
+variants reported in the paper.
 
 ```
 medkcoop/
 ├── reference/
-│   ├── medkcoop.py                # 原 trainers/GRAPH_DCPL/medkcoop.py（类 MeDKCoOp）
-│   └── paper_bytecode/            # 论文最终方法丢失源码后仅存的 .pyc
-└── ablation/                      # 16 个变体，对应论文 Table 4/5 与 Fig 4
+│   ├── medkcoop.py          # implementation used for the reported numbers
+│   └── paper_bytecode/      # bytecode of the final variant (see below)
+├── fixed/medkcoop.py        # same method with explicit gradient / caching options
+└── ablation/                # variants behind the ablation tables and backbone figure
 ```
 
-## 两个关键事实
+## Which class produces the reported numbers
 
-1. **论文 Table 1 的 "Ours" 不是 `reference/medkcoop.py`**。
-   8 个数据集 16 个 base/new 数值与日志中 **`GRAPH_DCPL_NO_TXT_VIS_GRAPH`** 完全一致；
-   该类源码已丢失，只剩 `reference/paper_bytecode/vip_graph_dcpl_biomedclip_adapter_no_text_vis_graph.cpython-310.pyc`
-   （Python 3.10 可 `marshal` 载入并反汇编）。
-2. `reference/medkcoop.py` 与字节码的差异只有：
-   - 类名不同；
-   - `build_prompt_graph` 中 `edge_construct` vs `cal_edge_emb`（实现一致）；
-   - `_get_base_image_features` 少 3 行图像特征加噪；
-   - `_get_base_text_features` 少一句 `print("构建文本子图......")`。
+The reported results are produced by the trainer registered as
+**`GRAPH_DCPL_NO_TXT_VIS_GRAPH`** — an identifier inherited from the ablation naming scheme.
+`MeDKCoOp` is a registered alias of the same implementation, so both names select identical code.
 
-   → 重建时以 `reference/medkcoop.py` 为骨架，恢复上述差异即可；checkpoint 键完全兼容。
+During the final stage of the project the source file of that variant was lost; only its compiled
+bytecode remained (`reference/paper_bytecode/`). The implementation in `reference/medkcoop.py` was
+recovered from that bytecode and differs only in:
 
-## 消融文件与论文位置
+- the class name;
+- the helper name `edge_construct` (originally `cal_edge_emb`, identical logic);
+- three lines of unused `mean`/`noise` computation in `_get_base_image_features` (they consume the
+  RNG stream and therefore affect shuffling, so they are preserved);
+- one debug `print` in `_get_base_text_features`.
 
-| 文件 | trainer 类 | 论文位置 |
+The recovered module loads the original paper checkpoints without modification.
+
+## Gradient flow in the released implementation
+
+`MultiModalPromptLearner.build_prompt_graph` wraps the prompt/graph construction in
+`torch.no_grad()`, and the image prototypes are read through `.data`. As a consequence only the
+GCN fusion layer (`GCN_fuse`) — plus the alias-free parameters listed below — actually receives
+gradients and is updated by the optimizer.
+
+`fixed/medkcoop.py` exposes four switches to change this behaviour, all defaulting to the released
+behaviour except `GRAD_CTX`:
+
+| Config key | Effect when enabled |
+|---|---|
+| `TRAINER.GRAPHDCPL.GRAD_CTX` | learnable context participates in the forward graph |
+| `TRAINER.GRAPHDCPL.TRAIN_VISUAL_NET` | `visual_net` is added to the optimizer |
+| `TRAINER.GRAPHDCPL.LEARN_BETA` | residual weight `beta` becomes a learnable scalar |
+| `TRAINER.GRAPHDCPL.GRAD_IMGPROTO` | image class prototypes participate in gradients |
+
+Enabling only `GRAD_CTX` keeps the base-to-new scores within 0.04 points of the released numbers;
+the method-level effect of the remaining switches is documented in the paper's follow-up analysis.
+
+Parameters present in the checkpoint but unused in the forward pass (`GCN_tt`, `GCN_it`,
+`scale_mm`, `base_img_features`) are kept for checkpoint compatibility.
+
+## Ablation variants
+
+`ablation/` mirrors the naming used in the paper's experiments. Each file registers a distinct
+trainer class, so a variant is selected with `--trainer <CLASS>`.
+
+### Knowledge ablation (Table 4)
+
+| Trainer class | File | Configuration |
 |---|---|---|
-| `..._no_text_vis_fuse.py` | `GRAPH_DCPL_NO_TXT_VIS_FUSE` | Table 5 (✗✗✗) |
-| `..._no_vis_fuse_graph.py` | `GRAPH_DCPL_NO_VIS_FUSE_GRAPH` | Table 5 (✗✓✗) |
-| `..._no_vis_graph.py` | `GRAPH_DCPL_NO_VIS_GRAPH` | Table 5 (✓✗✓) |
-| `..._no_text_vis_graph1.py` | `GRAPH_DCPL_NO_TXT_VIS_GRAPH1` | Table 5 (✗✗✓) |
-| `..._no_text_graph.py` | `GRAPH_DCPL_NO_TXT_GRAPH` | Table 5 待对齐行候选 |
-| `..._no_text_fuse_graph.py` | `GRAPH_DCPL_NO_TXT_FUSE_GRAPH` | 同上 |
-| `..._no_fuse.py` | `GRAPH_DCPL_NO_FUSE` | 同上 |
-| `..._no_vis_bias.py` | `GRAPH_DCPL_NO_VIS_BIAS` | Table 4 w/o VDK |
-| `..._no_txt_bias.py` | `GRAPH_DCPL_NO_TXT_BIAS` | Table 4 w/o LDK |
-| `..._no_medsam.py` | `GRAPH_DCPL_NO_MEDSAM` | Table 4 w/o VK |
-| `..._general.py` | `GRAPH_DCPL_GENERAL` | Table 4 General |
-| `..._incorrect.py` | `GRAPH_DCPL_INCORRECT` | Table 4 Incorrect |
-| `..._outofdomain.py` | `GRAPH_DCPL_OUTOFDOMAIN` | Table 4 Out-of-domain |
-| `..._clip.py` / `_pubmedclip.py` / `_pmcclip.py` | `GRAPH_DCPL_CLIP` 等 | Fig 4 backbone |
+| `GRAPH_DCPL_NO_VIS_BIAS` | `..._no_vis_bias.py` | w/o visual domain knowledge |
+| `GRAPH_DCPL_NO_TXT_BIAS` | `..._no_txt_bias.py` | w/o prompt-branch domain knowledge |
+| `GRAPH_DCPL_NO_MEDSAM` | `..._no_medsam.py` | w/o MedSAM visual knowledge |
+| `GRAPH_DCPL_GENERAL` | `..._general.py` | generic textual knowledge |
+| `GRAPH_DCPL_INCORRECT` | `..._incorrect.py` | incorrect textual knowledge |
+| `GRAPH_DCPL_OUTOFDOMAIN` | `..._outofdomain.py` | out-of-domain textual knowledge |
 
-已确认数值的消融（8 数据集 base/new 均值）：
+### Component combination (Table 5)
 
-| 类 | base | new |
-|---|---|---|
-| `NO_TXT_VIS_GRAPH`（论文 Ours） | 87.88 | 79.95 |
-| `NO_TXT_VIS_FUSE` | 84.81 | 72.37 |
-| `NO_VIS_FUSE_GRAPH` | 83.77 | 74.70 |
-| `NO_VIS_GRAPH` | 87.53 | 71.04 |
-| `NO_TXT_VIS_GRAPH1` | 87.52 | 51.92 |
+| Trainer class | File |
+|---|---|
+| `GRAPH_DCPL_NO_TXT_VIS_FUSE` | `..._no_text_vis_fuse.py` |
+| `GRAPH_DCPL_NO_VIS_FUSE_GRAPH` | `..._no_vis_fuse_graph.py` |
+| `GRAPH_DCPL_NO_VIS_GRAPH` | `..._no_vis_graph.py` |
+| `GRAPH_DCPL_NO_TXT_VIS_GRAPH1` | `..._no_text_vis_graph1.py` |
+| `GRAPH_DCPL_NO_TXT_GRAPH` | `..._no_text_graph.py` |
+| `GRAPH_DCPL_NO_TXT_FUSE_GRAPH` | `..._no_text_fuse_graph.py` |
+| `GRAPH_DCPL_NO_FUSE` | `..._no_fuse.py` |
 
-## 阅读提示
+### Backbone comparison (Fig. 4)
 
-`reference/medkcoop.py` 前向中 `GCN_tt`、`GCN_it`、`scale_mm`、`base_img_features` 是**死参数/仅初始化用**，
-但仍存在于 checkpoint，容易误读。MedSAM 路径在 `reference/` 中已指向
-`/data/wangyijun/model/medsam/sam_vit_b_01ec64.pth`。
+`GRAPH_DCPL_CLIP`, `GRAPH_DCPL_PUBMEDCLIP`, `GRAPH_DCPL_PMCCLIP`
+(from `..._clip.py`, `..._pubmedclip.py`, `..._pmcclip.py`).
+
+Run any variant with the shared scripts, overriding the trainer name:
+
+```bash
+TRAINER=GRAPH_DCPL_NO_VIS_GRAPH GPU=0 bash scripts/medkcoop/base2new.sh BTMRI1 1
+```

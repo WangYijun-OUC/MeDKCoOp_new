@@ -23,7 +23,7 @@ from open_clip.src.open_clip import create_model_from_pretrained, get_tokenizer
 from MedSAM.segment_anything import sam_model_registry
 
 MEDSAM_CKPT_PATH = os.environ.get(
-    "MEDSAM_CKPT", "/data/wangyijun/model/medsam/sam_vit_b_01ec64.pth"
+    "MEDSAM_CKPT", "./weights/sam_vit_b_01ec64.pth"
 )
 
 # ---- MedSAM 特征缓存（对应 AUDIT B14）----
@@ -36,7 +36,7 @@ import pickle
 _MEDSAM_CACHE = {}
 _MEDSAM_CACHE_ENABLED = os.environ.get("MEDSAM_CACHE", "0") == "1"
 _MEDSAM_CACHE_DIR = os.environ.get(
-    "MEDSAM_CACHE_DIR", "/data/wangyijun/ckpt/medsam_cache"
+    "MEDSAM_CACHE_DIR", "./output/medsam_cache"
 )
 
 

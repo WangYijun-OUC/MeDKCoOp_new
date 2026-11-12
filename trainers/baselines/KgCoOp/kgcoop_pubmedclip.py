@@ -28,7 +28,7 @@ from trainers.prompt_templates import CUSTOM_TEMPLATES
 _tokenizer = _Tokenizer()
 
 
-directory = os.environ.get("PUBMEDCLIP_DIR", "/data/wangyijun/model/PubMedCLIP")
+directory = os.environ.get("PUBMEDCLIP_DIR", "./weights/PubMedCLIP")
 
 # File URLs
 files = {

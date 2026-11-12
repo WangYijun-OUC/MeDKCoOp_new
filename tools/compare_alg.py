@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """对比 base2new 三组：原版 / 修复版 / 算法改进版（方案 3）。
 
-  orig      : /data/wangyijun/ckpt/paper_base2new/base2new            (MeDKCoOp)
-  fix       : /data/wangyijun/ckpt/MeDKCoOp_fixcmp/base2new/cmp_fix_ctx (MeDKCoOpFix, GRAD_CTX)
-  alg_v3    : /data/wangyijun/ckpt/MeDKCoOp_alg/base2new/alg_v3        (MeDKCoOpFix + 全开)
+  orig      : ./output/paper_base2new/base2new            (MeDKCoOp)
+  fix       : ./output/MeDKCoOp_fixcmp/base2new/cmp_fix_ctx (MeDKCoOpFix, GRAD_CTX)
+  alg_v3    : ./output/MeDKCoOp_alg/base2new/alg_v3        (MeDKCoOpFix + 全开)
 """
 
 import glob
@@ -16,9 +16,9 @@ CFG = "vit_b16_0002_b50_randflip"
 DATASETS = ["BTMRI1", "CHMNIST", "covid", "ctkidney", "lungcolon", "retina", "octmnist", "kvasir"]
 SEEDS = ["1", "2", "3"]
 GROUPS = [
-    ("orig", "/data/wangyijun/ckpt/paper_base2new/base2new", "MeDKCoOp"),
-    ("fix", "/data/wangyijun/ckpt/MeDKCoOp_fixcmp/base2new/cmp_fix_ctx", "MeDKCoOpFix"),
-    ("alg_v3", "/data/wangyijun/ckpt/MeDKCoOp_alg/base2new/alg_v3", "MeDKCoOpFix"),
+    ("orig", "./output/paper_base2new/base2new", "MeDKCoOp"),
+    ("fix", "./output/MeDKCoOp_fixcmp/base2new/cmp_fix_ctx", "MeDKCoOpFix"),
+    ("alg_v3", "./output/MeDKCoOp_alg/base2new/alg_v3", "MeDKCoOpFix"),
 ]
 
 

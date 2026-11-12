@@ -1,19 +1,22 @@
 # tests
 
-四个冒烟测试，覆盖审查报告里最容易回归的点：
+Smoke tests covering the invariants most likely to regress.
 
-| 文件 | 覆盖 |
+| File | Covers |
 |---|---|
-| `test_imports.py` | 所有 trainer / dataset 注册成功且无重名 |
-| `test_configs.py` | 每个数据集配置有对应类；脚本引用的 trainer 都已注册 |
-| `test_ckpt_compat.py` | 旧论文 checkpoint 的键与形状 |
-| `test_clip_merge.py` | 合并后的 clip 包：标准路径 + MaPLe 分支 |
-
-运行：
+| `test_imports.py` | All trainers and datasets register without name collisions |
+| `test_configs.py` | Every dataset config has a matching reader class; every trainer name referenced by a script is registered |
+| `test_ckpt_compat.py` | Checkpoint keys and shapes expected by the released weights |
+| `test_clip_merge.py` | The merged `clip` package loads both the standard and MaPLe paths |
 
 ```bash
-conda activate medkcoop
-pip install pytest  # 若未安装
-cd /home/wangyijun/MeDKCoOp
-python -m pytest tests -q
+pip install pytest
+python -m pytest tests -q      # 6 passed
+```
+
+`test_ckpt_compat.py` reads the checkpoint path from `MEKCOOP_TEST_CKPT` and skips itself when the
+variable is unset or the file is missing:
+
+```bash
+MEKCOOP_TEST_CKPT=/path/to/model.pth.tar-50 python -m pytest tests -q
 ```

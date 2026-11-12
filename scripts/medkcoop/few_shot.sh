@@ -2,8 +2,8 @@
 # Train and evaluate one few-shot run: DATASET SEED SHOTS.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-DATA="${DATA:-/data/wangyijun/dataset}"
-CKPT="${CKPT:-/data/wangyijun/ckpt/MeDKCoOp}"
+DATA="${DATA:-./data}"
+CKPT="${CKPT:-./output}"
 DATASET="${1:-BTMRI1}"
 SEED="${2:-1}"
 SHOTS="${3:-16}"
@@ -11,7 +11,7 @@ GPU="${GPU:-0}"
 TRAINER="${TRAINER:-GRAPH_DCPL_NO_TXT_VIS_GRAPH}"
 EPOCH="${EPOCH:-100}"
 CFG="${CFG:-vit_b16_base2new}"
-PYTHON_BIN="${PYTHON_BIN:-/data/wangyijun/conda/medkcoop/bin/python}"
+PYTHON_BIN="${PYTHON_BIN:-python}"
 [[ -x "$PYTHON_BIN" ]] || PYTHON_BIN=python
 CONFIG="$ROOT/configs/trainers/medkcoop/few_shot/${DATASET}.yaml"
 DATASET_CONFIG="$ROOT/configs/datasets/${DATASET}.yaml"

@@ -8,7 +8,7 @@
    `from clip import ...`、`from MedSAM...`、
    `open_clip.src.open_clip` 都能直接解析；
 2. 把 `open_clip` 里对 `hf-hub:microsoft/BiomedCLIP-...` 的加载替换为本地权重
-   （默认 /data/wangyijun/model/BiomedCLIP，可用 BIOMEDCLIP_DIR 覆盖）；
+   （默认 ./weights/BiomedCLIP，可用 BIOMEDCLIP_DIR 覆盖）；
 3. 提供 MEDSAM_CKPT / DATA_ROOT 默认值，供 trainer 使用。
 """
 
@@ -25,15 +25,15 @@ for _p in (str(ROOT), str(THIRD_PARTY), str(THIRD_PARTY / "open_clip")):
         sys.path.insert(0, _p)
 
 BIOMEDCLIP_DIR = os.environ.get(
-    "BIOMEDCLIP_DIR", "/data/wangyijun/model/BiomedCLIP"
+    "BIOMEDCLIP_DIR", "./weights/BiomedCLIP"
 )
 BERT_DIR = os.path.join(BIOMEDCLIP_DIR, "BiomedBERT")
 TOKENIZER_DIR = BIOMEDCLIP_DIR  # 根目录含 tokenizer.json / vocab.txt / tokenizer_config.json
 WEIGHTS = os.path.join(BIOMEDCLIP_DIR, "open_clip_pytorch_model.bin")
 CLIP_CONFIG = os.path.join(BIOMEDCLIP_DIR, "open_clip_config.json")
 
-os.environ.setdefault("MEDSAM_CKPT", "/data/wangyijun/model/medsam/sam_vit_b_01ec64.pth")
-os.environ.setdefault("DATA_ROOT", "/data/wangyijun/dataset")
+os.environ.setdefault("MEDSAM_CKPT", "./weights/sam_vit_b_01ec64.pth")
+os.environ.setdefault("DATA_ROOT", "./data")
 
 
 def _patch_open_clip():

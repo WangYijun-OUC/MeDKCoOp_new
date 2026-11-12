@@ -6,7 +6,7 @@ TRAINERS=(GRAPH_DCPL_NO_VIS_BIAS GRAPH_DCPL_NO_TXT_BIAS GRAPH_DCPL_NO_MEDSAM GRA
 for trainer in "${TRAINERS[@]}"; do
   for seed in 1 2 3; do
     for dataset in BTMRI1 CHMNIST covid ctkidney lungcolon retina octmnist kvasir; do
-      CKPT="${CKPT:-/data/wangyijun/ckpt/MeDKCoOp}/ablation" TRAINER="$trainer" \
+      CKPT="$CKPT/ablation" TRAINER="$trainer" \
         bash "$ROOT/scripts/medkcoop/base2new.sh" "$dataset" "$seed"
     done
   done

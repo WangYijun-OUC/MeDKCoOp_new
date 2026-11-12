@@ -22,7 +22,7 @@ from open_clip.src.open_clip import create_model_from_pretrained, get_tokenizer
 from MedSAM.segment_anything import sam_model_registry
 
 MEDSAM_CKPT_PATH = os.environ.get(
-    "MEDSAM_CKPT", "/data/wangyijun/model/medsam/sam_vit_b_01ec64.pth"
+    "MEDSAM_CKPT", "./weights/sam_vit_b_01ec64.pth"
 )
 
 class TextEncoder(nn.Module):

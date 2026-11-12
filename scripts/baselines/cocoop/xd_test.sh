@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-DATA="${DATA:-/data/wangyijun/dataset}"
-CKPT="${CKPT:-/data/wangyijun/ckpt/MeDKCoOp}"
+DATA="${DATA:-./data}"
+CKPT="${CKPT:-./output}"
 GPU="${GPU:-0}"
-PYTHON_BIN="${PYTHON_BIN:-/data/wangyijun/conda/medkcoop/bin/python}"
+PYTHON_BIN="${PYTHON_BIN:-python}"
 [[ -x "$PYTHON_BIN" ]] || PYTHON_BIN=python
 TRAINER="${TRAINER:-CoCoOp_BiomedCLIP}"
 export CUDA_VISIBLE_DEVICES="$GPU"

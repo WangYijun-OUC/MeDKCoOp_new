@@ -6,7 +6,7 @@ import re
 import statistics
 
 ACC_RE = re.compile(r"\* accuracy:\s*([\d.]+)%")
-ROOT = "/data/wangyijun/ckpt/MeDKCoOp_xd/cross_data/xd"
+ROOT = "./output/MeDKCoOp_xd/cross_data/xd"
 TRAINER = "MeDKCoOpFix"
 SEEDS = ["1", "2", "3"]
 

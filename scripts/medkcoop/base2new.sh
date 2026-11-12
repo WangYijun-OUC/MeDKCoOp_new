@@ -10,8 +10,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-DATA="${DATA:-/data/wangyijun/dataset}"
-CKPT="${CKPT:-/data/wangyijun/ckpt/MeDKCoOp}"
+DATA="${DATA:-./data}"
+CKPT="${CKPT:-./output}"
 DATASET="${1:-BTMRI1}"
 SEED="${2:-1}"
 GPU="${GPU:-0}"
@@ -21,15 +21,15 @@ EVAL_BS="${EVAL_BS:-16}"
 TRAINER="${TRAINER:-GRAPH_DCPL_NO_TXT_VIS_GRAPH}"
 CFG="${CFG:-vit_b16_0002_b50_randflip}"
 CONFIG_DIR="${CONFIG_DIR:-$ROOT/configs/trainers/medkcoop}"
-PYTHON_BIN="${PYTHON_BIN:-/data/wangyijun/conda/medkcoop/bin/python}"
+PYTHON_BIN="${PYTHON_BIN:-python}"
 EXTRA_OPTS="${EXTRA_OPTS:-}"
 RUN_TAG="${RUN_TAG:-}"
 BASE_DIR_TAG="${RUN_TAG:+$RUN_TAG/}"
 [[ -x "$PYTHON_BIN" ]] || PYTHON_BIN=python
 
 export CUDA_VISIBLE_DEVICES="$GPU"
-export BIOMEDCLIP_DIR="${BIOMEDCLIP_DIR:-/data/wangyijun/model/BiomedCLIP}"
-export MEDSAM_CKPT="${MEDSAM_CKPT:-/data/wangyijun/model/medsam/sam_vit_b_01ec64.pth}"
+export BIOMEDCLIP_DIR="${BIOMEDCLIP_DIR:-./weights/BiomedCLIP}"
+export MEDSAM_CKPT="${MEDSAM_CKPT:-./weights/sam_vit_b_01ec64.pth}"
 
 BASE_DIR="$CKPT/base2new/${BASE_DIR_TAG}$DATASET/shots_${SHOTS}/${TRAINER}/${CFG}/seed${SEED}"
 TRAIN_DIR="$BASE_DIR/train_base"

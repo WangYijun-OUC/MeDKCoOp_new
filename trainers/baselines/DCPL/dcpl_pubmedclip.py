@@ -21,7 +21,7 @@ from MedSAM.segment_anything import sam_model_registry
 _tokenizer = _Tokenizer()
 
 
-directory = os.environ.get("PUBMEDCLIP_DIR", "/data/wangyijun/model/PubMedCLIP")
+directory = os.environ.get("PUBMEDCLIP_DIR", "./weights/PubMedCLIP")
 
 # File URLs
 files = {
@@ -246,7 +246,7 @@ class CustomCLIP(nn.Module):
         # self.remote_model.load_state_dict(torch.load(model_path))
 
         print('loading medical model')
-        MedSAM_CKPT_PATH = "/data/wangyijun/model/medsam/sam_vit_b_01ec64.pth"
+        MedSAM_CKPT_PATH = "./weights/sam_vit_b_01ec64.pth"
         self.medical_model = sam_model_registry['vit_b'](checkpoint=MedSAM_CKPT_PATH)
 
         # self.visual_net = nn.Sequential(OrderedDict([

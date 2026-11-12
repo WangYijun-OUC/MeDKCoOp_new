@@ -1,81 +1,88 @@
-# 实验脚本
+# scripts
 
-每个方法目录都包含完整的独立运行脚本；其中 base2new、few-shot、`xd_train`、`xd_test`
-直接调用 `train.py`，cross-data / DG 批量入口只调用同一方法目录内的 `xd_*`。它们不依赖
-跨方法统一执行器。额外的 `scripts/run_all_methods.sh` 只用于维护者批量调度。
+Task launchers. Each method directory is self-contained: its `base2new`, `few_shot`,
+`xd_train` and `xd_test` scripts call `train.py` directly, and the batch entry points only call the
+per-method scripts in the same directory.
 
-## 方法目录
+```
+scripts/
+├── medkcoop/          # proposed method
+├── baselines/         # biomedcoop, coop, cocoop, kgcoop, MaPLe, dcpl, graph_adapter, zeroshot
+└── run_all_methods.sh # convenience loop over all methods
+```
 
-- 本文方法：`scripts/medkcoop/`
-- Baseline：`scripts/baselines/{biomedcoop,coop,cocoop,kgcoop,MaPLe,dcpl,graph_adapter,zeroshot}/`
+## Entry points
 
-每个可训练 baseline 目录提供：
+Every trainable method directory provides:
 
-- `base2new.sh DATASET SEED`
-- `few_shot.sh DATASET SEED SHOTS`
-- `cross_data_eval.sh`：BTMRI1 训练，其他 7 个数据集评测，3 seeds
-- `domain_genera.sh`：BTMRI1 训练，7 个 v2 目标数据集评测，3 seeds
-- `xd_train.sh SOURCE SEED` 与 `xd_test.sh TARGET SEED SOURCE`：单次运行和排错
+| Script | Usage | Purpose |
+|---|---|---|
+| `base2new.sh` | `DATASET SEED` | 16-shot base training, then novel-class evaluation |
+| `few_shot.sh` | `DATASET SEED SHOTS` | few-shot training and evaluation |
+| `xd_train.sh` | `SOURCE SEED` | cross-dataset source training |
+| `xd_test.sh` | `TARGET SEED SOURCE` | evaluate a source checkpoint on a target dataset |
+| `cross_data_eval.sh` | — | loop over all targets and seeds |
+| `domain_genera.sh` | — | domain-generalization loop over the `*v2` targets |
 
-例如：
-
-~~~bash
-GPU=0 bash scripts/baselines/coop/base2new.sh BTMRI1 1
-GPU=0 bash scripts/baselines/biomedcoop/few_shot.sh CHMNIST 2 4
-GPU=0 bash scripts/baselines/MaPLe/xd_train.sh BTMRI1 1
-GPU=0 bash scripts/baselines/MaPLe/xd_test.sh CHMNIST 1 BTMRI1
-~~~
-
-MeDKCoOp 对应入口：
-
-~~~bash
+```bash
 GPU=0 bash scripts/medkcoop/base2new.sh BTMRI1 1
 GPU=0 bash scripts/medkcoop/few_shot.sh BTMRI1 1 16
-GPU=0 bash scripts/medkcoop/cross_data_eval.sh
-GPU=0 bash scripts/medkcoop/domain_genera.sh
-~~~
+GPU=0 bash scripts/baselines/coop/base2new.sh BTMRI1 1
+GPU=0 bash scripts/baselines/biomedcoop/few_shot.sh CHMNIST 2 4
+```
 
-## 默认方法实现
+Zeroshot has no training stage, so its directory provides evaluation entry points only.
 
-| 目录 | Trainer | base2new epoch | few-shot / transfer epoch |
+## Default trainer per directory
+
+| Directory | Trainer | base2new epochs | few-shot / transfer epochs |
 |---|---|---:|---:|
-| biomedcoop | BiomedCoOp_BiomedCLIP | 50 | 100 |
-| coop | CoOp_BiomedCLIP | 50 | 100 |
-| cocoop | CoCoOp_BiomedCLIP | 50 | 100 |
-| kgcoop | KgCoOp_BiomedCLIP | 50 | 100 |
-| MaPLe | MaPLe_CLIP | 5 | 100 |
-| dcpl | DCPL_biomedclip | 50 | 100 |
-| graph_adapter | GraphCLIP | 50 | 100 |
-| zeroshot | ZeroshotBiomedCLIP | 无训练 | 无训练 |
+| medkcoop | `GRAPH_DCPL_NO_TXT_VIS_GRAPH` | 50 | 100 |
+| biomedcoop | `BiomedCoOp_BiomedCLIP` | 50 | 100 |
+| coop | `CoOp_BiomedCLIP` | 50 | 100 |
+| cocoop | `CoCoOp_BiomedCLIP` | 50 | 100 |
+| kgcoop | `KgCoOp_BiomedCLIP` | 50 | 100 |
+| MaPLe | `MaPLe_CLIP` | 5 | 100 |
+| dcpl | `DCPL_biomedclip` | 50 | 100 |
+| graph_adapter | `GraphCLIP` | 50 | 100 |
+| zeroshot | `ZeroshotBiomedCLIP` | — | — |
 
-MaPLe 的 base2new 默认 5 epoch 来自现存实验配置；transfer 配置为 100 epoch。
-`EPOCH` 可覆盖默认值。通用变量包括 `DATA`、`CKPT`、`GPU`、`SHOTS`、
-`EVAL_BS`、`PYTHON_BIN`、`SOURCE` 和 `MODEL_DIR`。
+`EPOCH` overrides the default. MaPLe keeps 5 epochs for base-to-new because that is the value in
+the released configuration.
 
-默认优先使用 `/data/wangyijun/conda/medkcoop/bin/python`，不存在时使用当前环境的
-`python`。输出默认写到 `/data/wangyijun/ckpt/MeDKCoOp/<method>/...`。
-脚本只有在 checkpoint 与所需指标日志同时存在时才跳过；残缺产物会触发错误并停止。
+## Environment variables
 
-## 统一调度
+| Variable | Default | Meaning |
+|---|---|---|
+| `DATA` | `./data` | dataset root |
+| `CKPT` | `./output` | output root |
+| `GPU` | `0` | CUDA device index |
+| `SHOTS` | `16` | shots per class |
+| `EPOCH` | 50 / 100 | training epochs |
+| `EVAL_BS` | `16` | evaluation batch size |
+| `RUN_TAG` | empty | sub-directory tag for A/B runs |
+| `EXTRA_OPTS` | empty | extra `train.py` overrides |
+| `PYTHON_BIN` | `python` | interpreter to use |
+| `SOURCE` / `MODEL_DIR` | `BTMRI1` / derived | cross-dataset source and checkpoint directory |
 
-统一脚本调用各方法自己的公开入口：
+A run is skipped only when the checkpoint **and** the required metric lines are both present;
+partial results raise an error instead of being silently reused.
 
-~~~bash
+## Batch scheduling
+
+```bash
 GPU=0 bash scripts/run_all_methods.sh base2new BTMRI1 1
 GPU=0 bash scripts/run_all_methods.sh few_shot BTMRI1 1 16
-~~~
+```
 
-完整 cross-data 和 domain-generalization 会依次运行大量实验，建议按方法使用对应目录的脚本，
-或自行分配不同的空闲 GPU。
+Cross-dataset and domain-generalization loops launch many runs; run them per method and assign
+different GPUs as needed.
 
-## 消融
+## Ablation launchers
 
-- `base2new_abla.sh`：Table 4 知识来源和文本干预消融
-- `base2new_fuse.sh`：Table 5 组件组合消融
-- `base2new_clip.sh`：Fig. 4 backbone 消融；PubMedCLIP/PMC-CLIP 需要额外本地权重
-
-## 领域泛化解释限制
-
-当前 `*v2` 数据集类把同一份 split 同时交给 `train_x` 和 `test`。MeDKCoOp 会用
-`train_x` 构建视觉知识图，因此 Table 3 的实验语义仍需结合论文原设置核实，不能直接表述为
-完全不使用目标域标签。脚本已可运行，这一限制不等于数值已完成复现。
+| Script | Covers |
+|---|---|
+| `medkcoop/base2new_abla.sh` | Table 4: knowledge sources and textual interventions |
+| `medkcoop/base2new_fuse.sh` | Table 5: component combinations |
+| `medkcoop/base2new_clip.sh` | Fig. 4 backbone comparison (PubMedCLIP / PMC-CLIP weights required) |
+| `medkcoop/base2new_algv3.sh` | variant with learnable-context gradients and larger context |

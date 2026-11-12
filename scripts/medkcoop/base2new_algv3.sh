@@ -21,8 +21,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-DATA="${DATA:-/data/wangyijun/dataset}"
-CKPT="${CKPT:-/data/wangyijun/ckpt/MeDKCoOp_alg}"
+DATA="${DATA:-./data}"
+CKPT="${CKPT:-./output}/alg_v3"
 DATASET="${1:-BTMRI1}"
 SEED="${2:-1}"
 GPU="${GPU:-0}"
@@ -33,18 +33,18 @@ EVAL_BS="${EVAL_BS:-8}"
 TRAINER="${TRAINER:-MeDKCoOpFix}"
 CFG="${CFG:-vit_b16_0002_b50_randflip}"
 CONFIG_DIR="${CONFIG_DIR:-$ROOT/configs/trainers/medkcoop}"
-PYTHON_BIN="${PYTHON_BIN:-/data/wangyijun/conda/medkcoop/bin/python}"
+PYTHON_BIN="${PYTHON_BIN:-python}"
 RUN_TAG="${RUN_TAG:-alg_v3}"
 NCTX="${NCTX:-8}"
 LR="${LR:-0.01}"
 [[ -x "$PYTHON_BIN" ]] || PYTHON_BIN=python
 
 export CUDA_VISIBLE_DEVICES="$GPU"
-export BIOMEDCLIP_DIR="${BIOMEDCLIP_DIR:-/data/wangyijun/model/BiomedCLIP}"
-export MEDSAM_CKPT="${MEDSAM_CKPT:-/data/wangyijun/model/medsam/sam_vit_b_01ec64.pth}"
+export BIOMEDCLIP_DIR="${BIOMEDCLIP_DIR:-./weights/BiomedCLIP}"
+export MEDSAM_CKPT="${MEDSAM_CKPT:-./weights/sam_vit_b_01ec64.pth}"
 # MedSAM 特征缓存（按 256 维均值向量，约 1.7 KB/图）；分块 2 张以避免显存峰值
 export MEDSAM_CACHE="${MEDSAM_CACHE:-1}"
-export MEDSAM_CACHE_DIR="${MEDSAM_CACHE_DIR:-/data/wangyijun/ckpt/medsam_cache}"
+export MEDSAM_CACHE_DIR="${CKPT:-./output}/medsam_cache"
 export MEDSAM_CHUNK="${MEDSAM_CHUNK:-2}"
 
 # 改进算法的 5 个开关

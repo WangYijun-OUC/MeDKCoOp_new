@@ -2,7 +2,7 @@
 """汇总 base2new 复现结果，并与论文 Table 1 对比。
 
 用法:
-    python tools/collect_base2new.py --root /data/wangyijun/ckpt/paper_base2new
+    python tools/collect_base2new.py --root ./output/paper_base2new
 """
 
 import argparse
@@ -85,7 +85,7 @@ def hm(b, n):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--root", default="/data/wangyijun/ckpt/paper_base2new")
+    ap.add_argument("--root", default="./output/paper_base2new")
     ap.add_argument("--seeds", default="1,2,3")
     ap.add_argument("--out", default="")
     args = ap.parse_args()

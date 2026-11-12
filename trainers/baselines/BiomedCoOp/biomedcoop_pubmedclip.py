@@ -20,7 +20,7 @@ from clip.simple_tokenizer import SimpleTokenizer as _Tokenizer
 
 _tokenizer = _Tokenizer()
 
-directory = os.environ.get("PUBMEDCLIP_DIR", "/data/wangyijun/model/PubMedCLIP")
+directory = os.environ.get("PUBMEDCLIP_DIR", "./weights/PubMedCLIP")
 
 # File URLs
 files = {

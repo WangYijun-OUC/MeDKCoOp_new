@@ -1,32 +1,41 @@
 # third_party
 
-外部代码，**只保留被现役 trainer 引用的部分**，内容未改动。
+Vendored third-party code, restricted to what the trainers actually import. Contents are unmodified
+upstream sources except where noted below.
 
-| 目录 | 谁在用 | 说明 |
+| Directory | Used by | Notes |
 |---|---|---|
-| `Dassl.pytorch/` | 全部 trainer | 训练框架。当前环境是 editable 安装且指向**原项目**，换环境必须 `pip install -e third_party/Dassl.pytorch` |
-| `open_clip/` | `medkcoop/*`、baseline 的 BiomedCLIP 版本 | BiomedCLIP 加载；代码以 `open_clip.src.open_clip` 绝对导入，**不要改目录名** |
-| `clip/` | 所有 trainer | 合并后的 CLIP：标准 CLIP + `pmcclip.py`（PMC-CLIP）+ MaPLe/DCPL 的 IVLP 分支；标准路径与原实现位级一致 |
+| `Dassl.pytorch/` | all trainers | Training framework (registry, config, `TrainerX`). Install with `pip install -e third_party/Dassl.pytorch`. |
+| `open_clip/` | `medkcoop/*`, BiomedCLIP variants of the baselines | Loads BiomedCLIP. Imported as `open_clip.src.open_clip`, so **do not rename the directory**. |
+| `clip/` | all trainers | Merged CLIP package: standard CLIP + `pmcclip.py` (PMC-CLIP) + IVLP/MaPLe blocks. |
+| `MedSAM/` | `medkcoop` visual knowledge branch | Requires the MedSAM ViT-B checkpoint (see below). |
 
-| `MedSAM/` | `medkcoop` 视觉知识分支 | 权重在 `/data/wangyijun/model/medsam/sam_vit_b_01ec64.pth` |
+## The `clip` package
 
-## clip 包的内容
+`third_party/clip/` is the only CLIP implementation in the repository:
 
-`third_party/clip/` 是合并后的唯一 CLIP 实现：
+- standard CLIP (`clip.load()` and `clip.model.build_model(state_dict)` work as upstream);
+- `pmcclip.py`, the PMC-CLIP ResNet-50 vision tower;
+- the `ResidualAttentionBlock_IVLP` / `ResidualAttentionBlock_MaPLe` variants, enabled through
+  `design_details`, used by MaPLe, DCPL and GraphAdapter.
 
-- 标准 CLIP（`clip.load()` / `clip.model.build_model(state_dict)` 可直接用）；
-- `pmcclip.py`（PMC-CLIP 的 ResNet50 视觉塔）；
-- `clip1` 原有的 `ResidualAttentionBlock_IVLP` / `ResidualAttentionBlock_MaPLe` 分支，
-  通过 `design_details` 启用，MaPLe / DCPL / GraphAdapter 的调用方式不变。
+The standard path was verified to match the original `clip` package bit-for-bit (maxdiff = 0) on the
+same random weights.
 
-合并验证：同一份随机权重下，标准路径的 image/text 输出与合并前 `clip` 位级一致（maxdiff = 0）。
+## Offline backbone loading
 
-## 离线加载
+`create_model_from_pretrained('hf-hub:microsoft/BiomedCLIP-...')` requires network access unless the
+weights are available locally. Set `BIOMEDCLIP_DIR` to a directory containing
+`open_clip_pytorch_model.bin`, `open_clip_config.json`, `BiomedBERT/` and the tokenizer files; the
+loader in `bootstrap.py` then resolves the `hf-hub:` identifier to that directory.
 
-`create_model_from_pretrained('hf-hub:microsoft/BiomedCLIP-...')` 在无外网、HF cache 为空时会失败。
-本地权重：
+```python
+import bootstrap
+model, preprocess = bootstrap.load_biomedclip()
+tokenizer = bootstrap.load_biomedclip_tokenizer()
+```
 
-- `/data/wangyijun/model/BiomedCLIP/`（完整 HF 仓库，含 `open_clip_config.json`、`open_clip_pytorch_model.bin`、`BiomedBERT/`、tokenizer）
-- `/data/wangyijun/model/BiomedCLIP_local/`（单目录，缺 `tokenizer.json`）
-
-整改时新增 `load_biomedclip()`：`add_model_config()` + 本地权重 + 本地 tokenizer，并与在线加载做 `allclose` 验证。
+`MEDSAM_CKPT` points to the MedSAM ViT-B checkpoint (`sam_vit_b_01ec64.pth`), and
+`PMCCLIP_DIR` / `PMCCLIP_BERT_DIR` to the PMC-CLIP encoders and text tokenizer used by the
+backbone ablation. All three are environment variables, so no machine-specific path is baked into
+the code.

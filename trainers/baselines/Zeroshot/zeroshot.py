@@ -25,10 +25,10 @@ from trainers.prompt_templates import CUSTOM_TEMPLATES, BIOMEDCOOP_TEMPLATES
 from transformers import AutoTokenizer, AutoModel
 
 # Directory where the files should be located
-PUBMEDCLIP_DIR = os.environ.get("PUBMEDCLIP_DIR", "/data/wangyijun/model/PubMedCLIP")
-PMCCLIP_DIR = os.environ.get("PMCCLIP_DIR", "/data/wangyijun/model/PubMed")
+PUBMEDCLIP_DIR = os.environ.get("PUBMEDCLIP_DIR", "./weights/PubMedCLIP")
+PMCCLIP_DIR = os.environ.get("PMCCLIP_DIR", "./weights/PubMed")
 PMCCLIP_BERT_DIR = os.environ.get(
-    "PMCCLIP_BERT_DIR", "/data/wangyijun/model/BiomedCLIP/BiomedBERT"
+    "PMCCLIP_BERT_DIR", "./weights/BiomedCLIP/BiomedBERT"
 )
 
 # File URLs
