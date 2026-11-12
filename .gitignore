@@ -25,3 +25,7 @@ work_dir/
 
 # 本地开发记录（不随仓库发布）
 docs/
+
+# 本机环境变量（含私有路径）
+env.local.sh
+env.*.sh
