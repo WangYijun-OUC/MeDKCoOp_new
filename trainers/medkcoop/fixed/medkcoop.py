@@ -240,9 +240,10 @@ def build_image_graph(cfg, classnames, biomedclip_model, img_encoder, train_load
             # 评测阶段（mode=test）图像 transform 是确定性的，可安全复用缓存；
             # 训练阶段有 random_resized_crop，同一图每次张量不同，不能缓存。
             _cache_ok = str(getattr(cfg.MODEL, "mode", "")).lower() == "test"
+            # 这里的 visual_net 在 CPU 上（见函数开头），特征需留在 CPU
             remote_mae_feature = medsam_encode(
                 medical_model, image, cache=_cache_ok, pooled=True
-            ).type(dtype)
+            ).cpu().type(dtype)
             
             image_features = img_encoder(image.type(dtype))     # [4, 512]
             # tensor cuda8 torch.float16 tensor[2, 768],cuda8,torch.float16,grad_fn 8 * [2, 768] cuda8 torch.float16
@@ -895,7 +896,7 @@ class MeDKCoOpFixedImpl(TrainerX):
 class GRAPH_DCPL_NO_TXT_VIS_GRAPH_FIX(MeDKCoOpFixedImpl):
     """论文训练日志使用的类名；保留旧脚本和 checkpoint 路径兼容。"""
 
-
+ 
 @TRAINER_REGISTRY.register()
 class MeDKCoOpFix(MeDKCoOpFixedImpl):
     """修复版：让 learnable context 真正参与梯度（与原实现同参数可对照）。"""

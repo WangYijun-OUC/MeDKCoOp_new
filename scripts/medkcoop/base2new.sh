@@ -65,7 +65,8 @@ has_accuracy () {
 }
 
 find_checkpoint () {
-  find "$TRAIN_DIR" -mindepth 2 -maxdepth 2 -type f -name "model.pth.tar-${EPOCH}" -print -quit
+  [ -d "$TRAIN_DIR" ] || return 0
+  find "$TRAIN_DIR" -mindepth 2 -maxdepth 2 -type f -name "model.pth.tar-${EPOCH}" -print -quit 2>/dev/null || true
 }
 
 CKPT_FILE="$(find_checkpoint)"
