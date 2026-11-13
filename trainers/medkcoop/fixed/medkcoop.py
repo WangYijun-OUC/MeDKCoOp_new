@@ -26,6 +26,33 @@ MEDSAM_CKPT_PATH = os.environ.get(
     "MEDSAM_CKPT", "./weights/sam_vit_b_01ec64.pth"
 )
 
+# Edge-mask threshold. The released code sampled this from U(0.5, 0.6) on every
+# forward pass, so both training and evaluation depended on the global RNG state.
+# Default is now a fixed constant (midpoint of the original range).
+_EDGE_THRESHOLD = float(os.environ.get("EDGE_THRESHOLD", "0.55"))
+_EDGE_THRESHOLD_RANDOM = os.environ.get("EDGE_THRESHOLD_RANDOM", "0") == "1"
+
+# Prototype construction used the augmented training batch, so class prototypes
+# depended on the random crop of the moment. Re-reading the images and applying the
+# deterministic evaluation transform removes that dependency.
+_PROTO_DETERMINISTIC = os.environ.get("EDGE_PROTO_DETERMINISTIC", "1") == "1"
+_MEAN = (0.48145466, 0.4578275, 0.40821073)
+_STD = (0.26862954, 0.26130258, 0.27577711)
+
+
+def _deterministic_images(paths, dtype):
+    """Load images and apply resize-shortside/center-crop/normalize (no randomness)."""
+    import torchvision.transforms as _T
+    from PIL import Image as _Image
+    tfm = _T.Compose([
+        _T.Resize(224, interpolation=_T.InterpolationMode.BICUBIC),
+        _T.CenterCrop(224),
+        _T.ToTensor(),
+        _T.Normalize(_MEAN, _STD),
+    ])
+    tensors = [tfm(_Image.open(p).convert("RGB")) for p in paths]
+    return torch.stack(tensors).type(dtype)
+
 # ---- MedSAM 特征缓存（对应 AUDIT B14）----
 # 评测阶段 transform 是确定性的（resize+center crop），同一图多次评测得到相同张量，
 # 因此可以按张量内容哈希缓存 MedSAM 编码结果，避免每个 seed 重复跑 1024x1024 前向。
@@ -145,7 +172,15 @@ def edge_construct(x, p=2, dim=1, enable_mask=True):   # v1_graph---taking the s
     # print(A.size())
 
     b, c, p = x.size()  # [2, 3, 512]
-    threshold = random.uniform(0.5, 0.6)
+    # Edge-mask threshold. The released code sampled this from U(0.5, 0.6) on every
+    # forward pass, which made both training and evaluation depend on the global RNG
+    # state. It is now a fixed constant by default (midpoint of the original range) so
+    # that results are reproducible; EDGE_THRESHOLD re-enables a fixed user value and
+    # EDGE_THRESHOLD_RANDOM=1 restores the original behaviour.
+    if _EDGE_THRESHOLD_RANDOM:
+        threshold = random.uniform(0.5, 0.6)
+    else:
+        threshold = _EDGE_THRESHOLD
 
     zeros_vec = torch.zeros_like(edge)
     ones_vec = torch.ones_like(edge)    # [2, 3]
@@ -231,11 +266,15 @@ def build_image_graph(cfg, classnames, biomedclip_model, img_encoder, train_load
         for batch_idx, batch in tqdm(enumerate(train_loader_x), 
                                     total=len(train_loader_x), 
                                     desc='Extracting medical image features'):
-            image = batch["img"]    # [4, 3, 224, 224]
-            image = image.cuda()
-            # impath = batch["impath"]
-            label = batch["label"]
-            label = label.cuda()
+            # Prototypes must not depend on random augmentation: when
+            # EDGE_PROTO_DETERMINISTIC=1 (default), the image is re-read from disk and
+            # processed with the deterministic evaluation pipeline instead of the
+            # augmented batch tensor. Set it to 0 to reproduce the original behaviour.
+            if _PROTO_DETERMINISTIC:
+                image = _deterministic_images(batch["impath"], dtype).cuda()
+            else:
+                image = batch["img"].cuda()
+            label = batch["label"].cuda()
  
             # 评测阶段（mode=test）图像 transform 是确定性的，可安全复用缓存；
             # 训练阶段有 random_resized_crop，同一图每次张量不同，不能缓存。
